@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+/* Background Pattern */
+.bg-pattern-seigaiha {
+    background-color: #FDFCF6;
+    background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23E6B422' fill-opacity='0.05' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Glassmorphism */
+.glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.bg-jp-dark {
+    background-color: #484848 !important;
+}
+
+.bg-jp-mustard {
+    background-color: #E6B422 !important;
+}
+
+.bg-jp-cream {
+    background-color: #FDFCF6 !important;
+}
+
+.bg-jp-yellow {
+    background-color: #F3E7CA !important;
+}
+
+.bg-jp-accent-blue {
+    background-color: #5B84B1 !important;
+}
+
+.bg-jp-accent-green {
+    background-color: #8FA177 !important;
+}
+
+.bg-jp-red {
+    background-color: #D64045 !important;
+}
+
+.text-jp-mustard {
+    color: #E6B422 !important;
+}
+
+.text-jp-dark {
+    color: #484848 !important;
+}
+
+
+/* Custom Leaflet Marker */
+.leaflet-div-icon {
+    background: transparent;
+    border: none;
+}
+
+.custom-pin {
+    background-color: #E6B422;
+    width: 24px;
+    height: 24px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    border: 2px solid #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.custom-pin::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: #fff;
+    border-radius: 50%;
+}
+
+/* Animations */
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+    transform: translateY(100%);
+}
+
+/* Timeline CSS Logic */
+.timeline-line {
+    width: 2px;
+    background-image: linear-gradient(to bottom, #e5e7eb 50%, transparent 50%);
+    background-size: 2px 12px;
+    background-repeat: repeat-y;
+}
+
+.event-item:last-child .timeline-line {
+    display: none;
+}
+
+.event-item:last-child .transport-connector {
+    display: none;
+}
+
+/* Dragging Styles */
+.sortable-ghost {
+    opacity: 0.3;
+    background: #F3E7CA;
+}
+
+.sortable-drag {
+    cursor: grabbing;
+    background: white;
+    transform: scale(1.02);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 1rem;
+    z-index: 9999;
+}
+
+.sortable-drag .transport-connector,
+.sortable-drag .timeline-line,
+.sortable-drag .timeline-insert-btn {
+    display: none !important;
+}
+
+.drag-handle {
+    cursor: grab;
+    touch-action: none;
+}
+
+.timeline-insert-zone:hover .timeline-insert-btn {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Mobile Modal Fixes */
+.modal-body {
+    max-height: 85vh;
+    /* Fallback */
+    max-height: 85dvh;
+    /* Dynamic Viewport Height for mobile browsers */
+}
+
+/* Hide Scrollbar */
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
