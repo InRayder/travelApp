@@ -6,6 +6,7 @@
     </div>
     <BottomNav />
     <SettingsModal :isOpen="settingsOpen" @close="settingsOpen = false" />
+    <InstallPrompt />
   </div>
 </template>
 
@@ -15,6 +16,7 @@ import { RouterView } from 'vue-router'
 import AppHeader from './components/AppHeader.vue'
 import BottomNav from './components/BottomNav.vue'
 import SettingsModal from './components/SettingsModal.vue'
+import InstallPrompt from './components/InstallPrompt.vue'
 
 const settingsOpen = ref(false)
 </script>
