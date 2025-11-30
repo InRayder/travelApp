@@ -27,7 +27,7 @@
 
             <label class="block text-xs font-bold text-gray-500">旅伴設定</label>
             <div class="space-y-2">
-              <div v-for="(traveler, index) in localTravelers" :key="index" class="flex gap-2">
+              <div v-for="(_, index) in localTravelers" :key="index" class="flex gap-2">
                 <input 
                   type="text" 
                   v-model="localTravelers[index]"
@@ -50,15 +50,113 @@
                 {{ info.name }} ({{ info.symbol }})
               </option>
             </select>
+
+            <div class="space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-200 mt-2">
+              <div class="flex items-center justify-between" v-if="store.currencies['TWD']">
+                <div class="text-xs font-bold text-gray-600">匯率設定 (1 JPY = ? TWD)</div>
+                <div class="flex items-center gap-2">
+                  <input 
+                    type="number" 
+                    :value="store.currencies['TWD'].rate" 
+                    @input="(e) => updateRate('TWD', e)"
+                    step="0.0001"
+                    class="w-20 p-1.5 rounded bg-white border border-gray-200 text-xs text-right font-mono outline-none focus:border-jp-mustard"
+                  >
+                </div>
+              </div>
+            </div>
+
+            <label class="block text-xs font-bold text-gray-500">時間格式</label>
+            <div class="flex bg-gray-50 p-1 rounded-lg border border-gray-200">
+              <button 
+                @click="store.updateSettings({ timeFormat: '24h' })"
+                class="flex-1 py-1.5 text-xs font-bold rounded transition-all"
+                :class="store.settings.timeFormat === '24h' ? 'bg-white shadow text-jp-dark' : 'text-gray-400 hover:text-gray-600'"
+              >
+                24小時制 (14:00)
+              </button>
+              <button 
+                @click="store.updateSettings({ timeFormat: '12h' })"
+                class="flex-1 py-1.5 text-xs font-bold rounded transition-all"
+                :class="store.settings.timeFormat === '12h' ? 'bg-white shadow text-jp-dark' : 'text-gray-400 hover:text-gray-600'"
+              >
+                12小時制 (2:00 PM)
+              </button>
+            </div>
+
+
           </div>
+
+          <hr class="border-gray-100">
+
+          <!-- 交通票券管理 (Transport Pass Management) -->
+          <div class="space-y-3">
+            <label class="block text-xs font-bold text-gray-500">交通票券管理</label>
+            
+            <!-- Pass List -->
+            <div class="space-y-2">
+              <div v-for="pass in store.passes" :key="pass.id" class="flex items-center gap-3 bg-gray-50 p-2 rounded-lg border border-gray-200">
+                <div class="w-10 h-10 rounded bg-gray-200 overflow-hidden flex-shrink-0">
+                  <img :src="pass.imageUrl" class="w-full h-full object-cover" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-xs font-bold text-jp-dark truncate">{{ pass.name }}</div>
+                </div>
+                <button @click="removePass(pass.id)" class="text-gray-400 hover:text-red-500 px-2">
+                  <font-awesome-icon icon="fa-solid fa-trash" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Add Pass Form -->
+            <div class="bg-gray-50 p-3 rounded-xl border border-dashed border-gray-300 space-y-2">
+              <input 
+                type="text" 
+                v-model="newPassName"
+                class="w-full p-2 rounded bg-white border border-gray-200 text-xs outline-none focus:border-jp-mustard"
+                placeholder="票券名稱 (e.g. JR Pass)"
+              >
+              <div class="flex gap-2">
+                <button @click="triggerPassImageUpload" class="flex-1 py-2 bg-white border border-gray-200 text-gray-500 rounded text-xs hover:bg-gray-50 truncate px-2">
+                  <font-awesome-icon icon="fa-solid fa-image" /> {{ newPassImage ? '已選擇圖片' : '上傳圖片' }}
+                </button>
+                <button 
+                  @click="addPass" 
+                  class="flex-1 py-2 bg-jp-mustard text-white rounded text-xs font-bold hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  :disabled="!newPassName || !newPassImage"
+                >
+                  新增票券
+                </button>
+              </div>
+            </div>
+          </div>
+
+
 
           <hr class="border-gray-100">
 
           <!-- 資料管理 (Data Management) -->
           <div class="space-y-2">
-            <button @click="handleExport" class="w-full py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 font-bold hover:bg-gray-100 flex items-center justify-center gap-2 text-sm">
-              <font-awesome-icon icon="fa-solid fa-file-export" /> 匯出備份 (JSON)
-            </button>
+            <!-- Export Section -->
+            <div class="space-y-2">
+              <button @click="showExportOptions = !showExportOptions" class="w-full py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 font-bold hover:bg-gray-100 flex items-center justify-center gap-2 text-sm">
+                <font-awesome-icon icon="fa-solid fa-file-export" /> 匯出備份 (JSON)
+                <font-awesome-icon :icon="showExportOptions ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'" class="text-xs text-gray-400 ml-1" />
+              </button>
+              
+              <transition name="fade">
+                <div v-if="showExportOptions" class="bg-gray-50 rounded-xl p-3 border border-gray-200 space-y-3">
+                  <div class="grid grid-cols-2 gap-2">
+                    <button @click="handleExportFile" class="py-2 bg-white border border-gray-200 text-jp-dark rounded-lg text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                      <font-awesome-icon icon="fa-solid fa-download" /> 下載檔案
+                    </button>
+                    <button @click="handleExportCopy" class="py-2 bg-jp-dark text-white rounded-lg text-xs font-bold hover:bg-gray-700 transition-colors flex items-center justify-center gap-2">
+                      <font-awesome-icon icon="fa-solid fa-copy" /> {{ exportCopyStatus }}
+                    </button>
+                  </div>
+                </div>
+              </transition>
+            </div>
             <!-- Import Section -->
             <div class="space-y-2">
               <button @click="showImportOptions = !showImportOptions" class="w-full py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 font-bold hover:bg-gray-100 flex items-center justify-center gap-2 text-sm">
@@ -125,7 +223,7 @@
             <p class="font-bold text-gray-700">使用說明：</p>
             <ol class="list-decimal list-inside text-gray-600 space-y-1 ml-1">
               <li>複製下方的 Prompt 指令</li>
-              <li>開啟 ChatGPT / Claude 等 AI 工具</li>
+              <li>開啟 ChatGPT / Gemini 等 AI 工具</li>
               <li>貼上指令，並附上您的 Excel 行程文字</li>
               <li>將 AI 產生的 JSON 貼回上方的「匯入備份」</li>
             </ol>
@@ -141,7 +239,7 @@
             </div>
           </div>
 
-          <hr class="border-gray-100">
+          <hr class="border-gray-100 mb-3">
 
           <button @click="handleReset" class="w-full py-3 rounded-xl bg-red-50 text-red-500 font-bold hover:bg-red-100 flex items-center justify-center gap-2 text-sm">
             <font-awesome-icon icon="fa-solid fa-trash-can" /> 清空所有資料
@@ -149,7 +247,7 @@
         </div>
 
         <div class="mt-6 text-center">
-          <p class="text-[10px] text-gray-400">Easy Trip v8.1.0</p>
+          <p class="text-[10px] text-gray-400">{{ appName }} v{{ appVersion }}</p>
           <button @click="emit('close')" class="mt-4 text-gray-400 hover:text-gray-600">
             <font-awesome-icon icon="fa-solid fa-times" class="text-xl" />
           </button>
@@ -173,6 +271,10 @@
 import { ref } from 'vue'
 import { useTripStore } from '../stores/trip.ts'
 import ConfirmModal from './ConfirmModal.vue'
+import pkg from '../../package.json'
+
+const appName = pkg.name
+const appVersion = pkg.version
 
 const props = defineProps<{
   isOpen: boolean
@@ -228,19 +330,31 @@ const handleLoadExample = () => {
   })
 }
 
-const handleExport = () => {
-  // Get the raw string from localStorage, which is already a JSON string
+const showExportOptions = ref(false)
+const exportCopyStatus = ref('複製內容')
+
+const getFormattedData = () => {
   const rawData = localStorage.getItem('easy_trip_data_v7')
-  if (!rawData) {
+  if (!rawData) return null
+  
+  try {
+    const parsed = JSON.parse(rawData)
+    return JSON.stringify(parsed, null, 2)
+  } catch (e) {
+    console.error('Data parse failed', e)
+    return null
+  }
+}
+
+const handleExportFile = () => {
+  const formatted = getFormattedData()
+  if (!formatted) {
     openAlert('無資料可匯出')
     return
   }
   
-  // Parse and re-stringify with indentation for readability
   try {
-    const parsed = JSON.parse(rawData)
-    const formatted = JSON.stringify(parsed, null, 2)
-    const blob = new Blob([formatted], { type: 'application/json' }) // Use application/json
+    const blob = new Blob([formatted], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -251,6 +365,23 @@ const handleExport = () => {
     console.error('Export failed', e)
     openAlert('匯出失敗')
   }
+}
+
+const handleExportCopy = () => {
+  const formatted = getFormattedData()
+  if (!formatted) {
+    openAlert('無資料可匯出')
+    return
+  }
+
+  navigator.clipboard.writeText(formatted).then(() => {
+    exportCopyStatus.value = '已複製！'
+    setTimeout(() => {
+      exportCopyStatus.value = '複製內容'
+    }, 2000)
+  }).catch(() => {
+    openAlert('複製失敗')
+  })
 }
 
 
@@ -335,6 +466,14 @@ const updateCurrency = (e: Event) => {
   store.updateSettings({ currency: target.value })
 }
 
+const updateRate = (code: string, e: Event) => {
+  const target = e.target as HTMLInputElement
+  const val = parseFloat(target.value)
+  if (!isNaN(val) && val > 0) {
+    store.updateCurrencyRate(code, val)
+  }
+}
+
 // Trip Info Logic
 const localTitle = ref('')
 const localStartDate = ref('')
@@ -366,6 +505,45 @@ const removeTraveler = (index: number) => {
   saveTripInfo()
 }
 
+// Transport Pass Logic
+const newPassName = ref('')
+const newPassImage = ref('')
+
+const triggerPassImageUpload = () => {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = (e) => {
+    const target = e.target as HTMLInputElement
+    const file = target.files?.[0]
+    if (!file) return
+    
+    const reader = new FileReader()
+    reader.onload = (res) => {
+      newPassImage.value = res.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  }
+  input.click()
+}
+
+const addPass = () => {
+  if (!newPassName.value || !newPassImage.value) return
+  
+  store.addPass({ name: newPassName.value, imageUrl: newPassImage.value })
+  
+  // Reset form
+  newPassName.value = ''
+  newPassImage.value = ''
+  openAlert('票券已新增')
+}
+
+const removePass = (id: string) => {
+  openConfirmModal('刪除票券', '確定要刪除此票券嗎？', () => {
+    store.removePass(id)
+  })
+}
+
 // AI Helper Logic
 const showAiHelper = ref(false)
 const copyStatus = ref('複製')
@@ -373,13 +551,22 @@ const copyStatus = ref('複製')
 const aiPrompt = `請扮演一位專業的旅遊行程規劃助手。
 我會提供給你一份 Excel 或文字格式的行程表資料。請依照以下步驟協助我建立行程檔案，不要直接輸出 JSON：
 
-### 步驟一：資料檢查與補全
-請分析我提供的內容，檢查是否有以下缺漏，並以條列式詢問我：
+### 步驟一：確認互動模式
+請先詢問我希望使用哪種方式進行確認：
+1. **逐日確認模式**：一天一天詳細確認行程細節、交通與時間，適合需要精細調整的行程。
+2. **概略確認模式**：一次性檢查所有缺漏並確認，適合行程已大致確定的情況。
+
+### 步驟二：資料檢查與補全
+根據我選擇的模式：
+- 若為**逐日確認**：請依序針對每一天的行程進行檢查，每次只處理一天，確認完後再進行下一天。
+- 若為**概略確認**：請分析整份行程，一次性列出所有缺漏。
+
+檢查重點包含：
 1. 缺少的確切時間 (Time)。
 2. 缺少的交通方式 (Transport) 與細節。
 3. 缺少的預估費用 (Cost)。
 4. 任何語意不清的地點或活動。
-5. 若活動類別為 'flight'，必須詢問航班資訊 (起降機場代碼、班號、起降時間)。
+5. 若活動類別為 'flight'，必須詢問航班資訊 (起降機場代碼、班號、起降時間)，並將其填入 transports 中。
 
 ### 步驟二：景點導覽建議
 針對行程中的景點 (category: 'fun')，請主動建議「深度導覽資訊」(Guide)，並以 **Markdown 表格** 呈現以下欄位供我確認：
@@ -398,11 +585,16 @@ const aiPrompt = `請扮演一位專業的旅遊行程規劃助手。
 當我確認上述資訊或給予修訂後，請依據我最終的決定，並遵守以下規則生成 JSON：
 1. 自動判斷類別 (fun, food, shop, stay, transport, flight)。
 2. 若交通方式未明，請預設為步行 (type: 'walk')。
-3. 交通類型請使用：'walk' (步行), 'public' (公車/地鐵), 'express' (新幹線/特急), 'ferry' (船), 'taxi' (計程車/Uber), 'drive' (自駕)。
+3. 交通類型請使用：'walk' (步行), 'public' (公車/地鐵), 'express' (新幹線/特急), 'ferry' (船), 'taxi' (計程車/Uber), 'drive' (自駕), 'flight' (飛機)。
 4. 若我確認加入導覽，請將資料填入 \`attractionGuides\` 物件中。
 5. 若活動類別為 'food'，請自動搜尋並填入 Tabelog 連結至 \`link\` 欄位。
 6. 針對 \`attractionGuides\`，請嘗試從 Unsplash、Pexels 或 Pixabay 等免費圖庫搜尋並填入高品質的背景圖片連結至 \`image\` 欄位。
-7. 輸出符合以下 Schema 的 JSON 格式。
+7. 針對 \`color\` 欄位，**必須**使用 Tailwind CSS 的標準漸層 class，例如 'from-pink-500 to-red-600'。
+   - **可用顏色名稱**：slate, gray, zinc, neutral, stone, red, orange, amber, yellow, lime, green, emerald, teal, cyan, sky, blue, indigo, violet, purple, fuchsia, pink, rose。
+   - **可用色階**：50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950。
+   - **請勿使用**非標準顏色 (如 gold, brown, silver 等)。
+8. 針對每個行程事件 (Event)，請盡可能提供準確的經緯度座標 (\`lat\`, \`lng\`)，以便在地圖上顯示。
+9. 輸出符合以下 Schema 的 JSON 格式。
 
 ### JSON Schema 規範 (TypeScript 定義)：
 
@@ -410,7 +602,7 @@ const aiPrompt = `請扮演一位專業的旅遊行程規劃助手。
 interface TripData {
   title: string; // 旅遊標題
   startDate: string; // 開始日期 (YYYY-MM-DD)
-  settings: { currency: string }; // 預設 "JPY"
+  settings: { currency: string; timeFormat?: '12h' | '24h' }; // 預設 "JPY", "24h"
   travelers: string[]; // 預設 ["我"]
   days: Day[]; // 每日行程
   backups: Event[]; // 備案 (可為空陣列)
@@ -419,7 +611,7 @@ interface TripData {
 }
 
 interface Guide {
-  color: string; // 背景漸層 (Tailwind), e.g., "from-pink-500 to-red-600"
+  color: string; // 必須是 Tailwind CSS 漸層 class (e.g. "from-pink-500 to-red-600")。可用顏色：slate, gray, zinc, neutral, stone, red, orange, amber, yellow, lime, green, emerald, teal, cyan, sky, blue, indigo, violet, purple, fuchsia, pink, rose。
   icon: string; // 圖示 (FontAwesome), e.g., "fa-solid fa-torii-gate"
   desc: string; // 景點介紹 (約 50-100 字)
   tags: string[]; // 標籤 (3-5 個)
@@ -436,9 +628,46 @@ interface Day {
   events: Event[]; // 當日活動列表
 }
 
+interface TransportSchedule {
+  dep: string;        // 出發時間 (HH:MM)
+  arr?: string;       // 抵達時間 (HH:MM)
+  note?: string;      // 備註
+}
+
+interface Transport {
+  type: 'walk' | 'public' | 'express' | 'ferry' | 'taxi' | 'drive' | 'flight';
+  // Common
+  dep?: string; // 出發時間
+  arr?: string; // 抵達時間
+  cost?: number;
+  direction?: string; // 開往方向 (e.g. 往新宿)
+  note?: string; // 交通備註
+  
+  // Public (Bus/Subway)
+  line?: string;      // 路線 (e.g. 機場線, 50號公車)
+  
+  // Express (Shinkansen/Train)
+  trainNumber?: string; // 班次 (e.g. 回聲號 855)
+  car?: string;         // 車廂/座位 (e.g. 自由席, 5號車 3A) 或 租車車型
+  platform?: string;    // 月台
+  
+  // Flight (飛機)
+  flightNo?: string;    // 航班編號 (e.g. IT240)
+  depAirport?: string;  // 出發機場 (e.g. TPE)
+  arrAirport?: string;  // 抵達機場 (e.g. FUK)
+  
+  // Ferry / Taxi / Drive / Public / Flight
+  company?: string;     // 營運公司 / 船公司 / 車行 / 租車公司 / 航空公司
+
+  // Schedules (Express & Ferry)
+  schedules?: TransportSchedule[]; // 前後班次 (Max 5)
+}
+
 interface Event {
   title: string; // 活動名稱
   location: string; // 地點
+  lat?: number; // 緯度 (e.g. 33.5902)
+  lng?: number; // 經度 (e.g. 130.4207)
   mapUrl?: string; // Google Maps 連結
   category: 'fun' | 'food' | 'shop' | 'stay' | 'transport' | 'flight';
   time: string; // 開始時間 (HH:MM)
@@ -447,39 +676,14 @@ interface Event {
   currency?: string; // 預設 "JPY"
   notes?: string; // 備註
   link?: string; // 相關連結
-  flightInfo?: { // 僅當 category 為 'flight' 時需要
-    dep: string; // 出發機場代碼 (e.g. TPE)
-    arr: string; // 抵達機場代碼 (e.g. FUK)
-    flightNo: string; // 班號 (e.g. IT240)
-    depTime: string; // 起飛時間 (HH:MM)
-    arrTime: string; // 抵達時間 (HH:MM)
-  };
-  transport?: { // 僅當 category 為 'transport' 時需要
-    type: 'walk' | 'public' | 'express' | 'ferry' | 'taxi' | 'drive';
-    // Common
-    dep?: string; // 出發時間
-    arr?: string; // 抵達時間
-    cost?: number;
-    direction?: string; // 開往方向 (e.g. 往新宿)
-    
-    // Public (Bus/Subway)
-    line?: string;      // 路線 (e.g. 機場線, 50號公車)
-    
-    // Express (Shinkansen/Train)
-    trainNumber?: string; // 班次 (e.g. 回聲號 855)
-    car?: string;         // 車廂/座位 (e.g. 自由席, 5號車 3A) 或 租車車型
-    platform?: string;    // 月台
-    
-    // Ferry / Taxi / Drive
-    company?: string;     // 船公司 / 車行 / 租車公司
-
-    // Schedules (Express & Ferry)
-    schedules?: { dep: string; arr?: string; note?: string }[]; // 前後班次 (Max 5)
-  };
+  linkedGuide?: string; // 關聯的導覽 ID (Key of attractionGuides)
+  transports?: Transport[]; // 交通資訊 (含航班資訊)
 }
 \`\`\`
 
 請等待我提供行程資料後再開始轉換。`
+
+
 
 const copyPrompt = () => {
   navigator.clipboard.writeText(aiPrompt).then(() => {

@@ -11,7 +11,10 @@
       </div>
     </div>
 
-    <div class="flex-1 overflow-y-auto px-6 pb-24">
+    <div 
+      class="flex-1 overflow-y-auto px-6 pb-24"
+      @scroll="handleScroll"
+    >
       <!-- Chart -->
       <div class="bg-white rounded-2xl p-4 shadow-sm mb-6 h-48">
         <Doughnut :data="chartData" :options="chartOptions" />
@@ -75,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { useTripStore } from '../stores/trip.ts'
 import { storeToRefs } from 'pinia'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
@@ -229,4 +232,17 @@ const getCategoryIcon = (cat: string) => {
   const found = store.categories.find(c => c.id === cat)
   return found ? found.icon : 'fa-solid fa-circle'
 }
+
+const handleScroll = (e: Event) => {
+  const target = e.target as HTMLElement
+  if (target.scrollTop > 50) {
+    if (!store.headerCollapsed) store.setHeaderCollapsed(true)
+  } else {
+    if (store.headerCollapsed) store.setHeaderCollapsed(false)
+  }
+}
+
+onUnmounted(() => {
+  store.setHeaderCollapsed(false)
+})
 </script>

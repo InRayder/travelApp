@@ -31,7 +31,7 @@
       </button>
 
       <a v-if="item.category === 'food' && item.link && store.settings.currency === 'JPY'" :href="item.link" target="_blank" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 text-jp-gray hover:bg-orange-50 hover:text-orange-500 transition-colors">
-        <font-awesome-icon icon="fa-solid fa-bowl-food" class="text-sm" />
+        <font-awesome-icon icon="fa-solid fa-utensils" class="text-sm" />
       </a>
       <a v-if="item.category === 'stay' && item.bookingLink" :href="item.bookingLink" target="_blank" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 text-jp-gray hover:bg-blue-50 hover:text-blue-600 transition-colors">
         <font-awesome-icon icon="fa-solid fa-calendar-check" class="text-sm" />
@@ -45,7 +45,7 @@
       
       <!-- 記帳按鈕 (EXPENSE BUTTON) -->
       <button @click="emit('open-expense', item)" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 text-jp-gray hover:bg-green-50 hover:text-jp-accent-green transition-colors" title="記帳">
-        <font-awesome-icon icon="fa-solid fa-coins" class="text-sm" />
+        <font-awesome-icon icon="fa-solid fa-calculator" class="text-sm" />
       </button>
       
       <button @click="() => { console.log('Edit clicked'); emit('click-edit', item, index); }" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 text-jp-gray hover:bg-jp-yellow hover:text-jp-mustard transition-colors">
@@ -64,39 +64,23 @@
         <span class="bg-white/50 px-1.5 py-0.5 rounded text-[9px] border border-purple-100 font-bold" v-if="getStayDuration(item.stayInfo)">{{ getStayDuration(item.stayInfo) }}</span>
       </div>
       <div class="flex gap-4 mb-2">
-        <div class="flex flex-col"><span class="text-[9px] text-gray-400">CHECK-IN</span><span class="text-xs font-mono font-bold text-jp-dark">{{ item.stayInfo.checkIn || '15:00' }}</span></div>
-        <div class="flex flex-col"><span class="text-[9px] text-gray-400">CHECK-OUT</span><span class="text-xs font-mono font-bold text-jp-dark">{{ item.stayInfo.checkOut || '11:00' }}</span></div>
+        <div class="flex flex-col"><span class="text-[9px] text-gray-400">CHECK-IN</span><span class="text-xs font-mono font-bold text-jp-dark">{{ formatTime(item.stayInfo.checkIn || '15:00', store.settings.timeFormat) }}</span></div>
+        <div class="flex flex-col"><span class="text-[9px] text-gray-400">CHECK-OUT</span><span class="text-xs font-mono font-bold text-jp-dark">{{ formatTime(item.stayInfo.checkOut || '11:00', store.settings.timeFormat) }}</span></div>
       </div>
       <div v-if="item.stayInfo.notes" class="text-[10px] text-gray-600 border-t border-purple-100/50 pt-2 mt-1">
         <font-awesome-icon icon="fa-regular fa-clipboard" class="mr-1" /> {{ item.stayInfo.notes }}
       </div>
     </div>
 
-    <div v-if="item.category === 'flight' && item.flightInfo" class="mt-3 mb-2 bg-blue-50/50 rounded-lg p-3 border border-blue-100 relative z-10">
-      <div class="text-[10px] font-bold text-blue-600 mb-2 flex items-center gap-1">
-        <font-awesome-icon icon="fa-solid fa-plane" /> 航班資訊
-        <span v-if="item.flightInfo.flightNo" class="ml-auto bg-white/50 px-1.5 py-0.5 rounded text-[9px] border border-blue-100 font-mono">{{ item.flightInfo.flightNo }}</span>
-      </div>
-      <div class="flex items-center justify-between mb-2 px-2">
-        <div class="flex flex-col items-center">
-          <span class="text-lg font-black text-jp-dark font-mono">{{ item.flightInfo.dep || 'DEP' }}</span>
-          <span class="text-xs font-bold text-gray-500 font-mono">{{ item.flightInfo.depTime || '--:--' }}</span>
-        </div>
-        <div class="flex flex-col items-center text-blue-300 text-xs">
-          <font-awesome-icon icon="fa-solid fa-plane" />
-          <div class="w-12 h-[1px] bg-blue-200 my-1"></div>
-        </div>
-        <div class="flex flex-col items-center">
-          <span class="text-lg font-black text-jp-dark font-mono">{{ item.flightInfo.arr || 'ARR' }}</span>
-          <span class="text-xs font-bold text-gray-500 font-mono">{{ item.flightInfo.arrTime || '--:--' }}</span>
-        </div>
-      </div>
-    </div>
+
 
     <div v-if="item.notes" class="text-xs bg-jp-cream p-2 rounded-lg text-gray-600 border border-dashed border-gray-200 mt-2 relative z-10">{{ item.notes }}</div>
     
     <div v-if="item.cost > 0" class="mt-2 flex justify-end relative z-10">
-      <span class="text-xs font-medium text-jp-dark bg-gray-100 px-2 py-0.5 rounded-full">{{ store.currencies[item.currency || 'JPY']?.symbol }}{{ item.cost.toLocaleString() }}</span>
+      <span class="text-xs font-medium text-jp-dark bg-gray-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+        <span>{{ store.currencies[item.currency || store.settings.currency]?.symbol }}{{ item.cost.toLocaleString() }}</span>
+        <span v-if="convertedCost" class="text-gray-400 text-[10px]">≈ {{ store.currencies[store.settings.currency]?.symbol }}{{ convertedCost }}</span>
+      </span>
     </div>
   </div>
 </template>
@@ -105,6 +89,7 @@
 import { computed } from 'vue'
 import { useTripStore } from '../stores/trip.ts'
 import type { Event } from '../stores/trip.ts'
+import { formatTime } from '../utils/time.ts'
 
 const props = defineProps<{
   item: Event
@@ -174,5 +159,17 @@ const getGuideKey = (item: Event) => {
 }
 
 const hasGuide = computed(() => !!getGuideKey(props.item))
+
+const convertedCost = computed(() => {
+  if (!props.item.cost || props.item.currency === store.settings.currency) return null
+  
+  const inputRate = store.currencies[props.item.currency || store.settings.currency]?.rate || 1
+  const targetRate = store.currencies[store.settings.currency]?.rate || 1
+  
+  const valInJpy = props.item.cost / inputRate
+  const valInTarget = valInJpy * targetRate
+  
+  return Math.round(valInTarget).toLocaleString()
+})
 
 </script>

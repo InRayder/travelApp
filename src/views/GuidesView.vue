@@ -5,7 +5,10 @@
       <p class="text-xs text-gray-500">Travel Guides & Tips</p>
     </div>
 
-    <div class="flex-1 overflow-y-auto px-6 pb-24">
+    <div 
+      class="flex-1 overflow-y-auto px-6 pb-24"
+      @scroll="handleScroll"
+    >
       <div class="grid grid-cols-2 gap-4">
         <div v-for="(guide, key) in attractionGuides" :key="key" 
              @click="openGuide(key)"
@@ -52,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import { useTripStore } from '../stores/trip.ts'
 import { storeToRefs } from 'pinia'
 import GuideModal from '../components/GuideModal.vue'
@@ -115,4 +118,17 @@ const handleGuideSave = (newTitle: string, data: any, oldTitle?: string) => {
     }
   }
 }
+
+const handleScroll = (e: Event) => {
+  const target = e.target as HTMLElement
+  if (target.scrollTop > 50) {
+    if (!store.headerCollapsed) store.setHeaderCollapsed(true)
+  } else {
+    if (store.headerCollapsed) store.setHeaderCollapsed(false)
+  }
+}
+
+onUnmounted(() => {
+  store.setHeaderCollapsed(false)
+})
 </script>

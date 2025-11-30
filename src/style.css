@@ -111,9 +111,7 @@
     display: none;
 }
 
-.event-item:last-child .transport-connector {
-    display: none;
-}
+
 
 /* Dragging Styles */
 .sortable-ghost {

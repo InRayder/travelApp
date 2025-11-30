@@ -109,13 +109,39 @@
           </div>
           
           <div>
-            <label class="text-xs font-bold text-gray-500 block mb-1">主題顏色 (Tailwind Class)</label>
-            <input v-model="editForm.color" class="w-full bg-white p-3 rounded-xl outline-none border border-gray-200 text-sm font-mono" placeholder="from-pink-500 to-red-600">
+            <label class="text-xs font-bold text-gray-500 block mb-2">主題顏色 (Theme Color)</label>
+            <div class="grid grid-cols-5 gap-2">
+              <button 
+                v-for="color in PRESET_COLORS" 
+                :key="color" 
+                @click="editForm.color = color"
+                class="h-8 rounded-lg transition-all border-2 bg-gradient-to-br"
+                :class="[color, editForm.color === color ? 'border-jp-dark scale-110 shadow-md' : 'border-transparent hover:scale-105']"
+              ></button>
+            </div>
+            <!-- Custom Input Fallback -->
+            <div class="mt-2">
+               <input v-model="editForm.color" class="w-full bg-white p-2 rounded-lg outline-none border border-gray-200 text-[10px] font-mono text-gray-400" placeholder="自訂 Tailwind Class (Optional)">
+            </div>
           </div>
 
           <div>
-            <label class="text-xs font-bold text-gray-500 block mb-1">圖示 (FontAwesome Class)</label>
-            <input v-model="editForm.icon" class="w-full bg-white p-3 rounded-xl outline-none border border-gray-200 text-sm font-mono" placeholder="fa-solid fa-torii-gate">
+            <label class="text-xs font-bold text-gray-500 block mb-2">圖示 (Icon)</label>
+            <div class="grid grid-cols-6 gap-2 max-h-40 overflow-y-auto p-1">
+              <button 
+                v-for="icon in PRESET_ICONS" 
+                :key="icon" 
+                @click="editForm.icon = icon"
+                class="h-10 rounded-lg flex items-center justify-center transition-all border-2 bg-white"
+                :class="editForm.icon === icon ? 'border-jp-mustard text-jp-mustard shadow-md' : 'border-gray-100 text-gray-400 hover:border-gray-200'"
+              >
+                <font-awesome-icon :icon="icon" class="text-lg" />
+              </button>
+            </div>
+            <!-- Custom Input Fallback -->
+             <div class="mt-2">
+               <input v-model="editForm.icon" class="w-full bg-white p-2 rounded-lg outline-none border border-gray-200 text-[10px] font-mono text-gray-400" placeholder="自訂 FontAwesome Class (Optional)">
+            </div>
           </div>
 
           <div class="h-8"></div>
@@ -129,6 +155,31 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import type { Guide } from '../stores/trip.ts'
+
+const PRESET_COLORS = [
+  'from-pink-500 to-red-600',
+  'from-red-600 to-red-800',
+  'from-orange-400 to-red-500',
+  'from-yellow-400 to-orange-500',
+  'from-yellow-600 to-orange-600', // Mustard
+  'from-green-400 to-emerald-600',
+  'from-teal-400 to-cyan-600',
+  'from-cyan-400 to-blue-500',
+  'from-blue-500 to-indigo-600',
+  'from-indigo-500 to-purple-600',
+  'from-purple-500 to-pink-500',
+  'from-gray-600 to-gray-800',
+]
+
+const PRESET_ICONS = [
+  'fa-solid fa-torii-gate', 'fa-solid fa-archway', 'fa-solid fa-gopuram', 'fa-solid fa-landmark',
+  'fa-solid fa-mountain-sun', 'fa-solid fa-water', 'fa-solid fa-tree', 'fa-solid fa-leaf',
+  'fa-solid fa-umbrella-beach', 'fa-solid fa-ship', 'fa-solid fa-train-subway', 'fa-solid fa-plane',
+  'fa-solid fa-utensils', 'fa-solid fa-bowl-food', 'fa-solid fa-mug-hot', 'fa-solid fa-beer-mug-empty',
+  'fa-solid fa-bag-shopping', 'fa-solid fa-gift', 'fa-solid fa-store', 'fa-solid fa-cart-shopping',
+  'fa-solid fa-camera', 'fa-solid fa-ticket', 'fa-solid fa-masks-theater', 'fa-solid fa-palette',
+  'fa-solid fa-bed', 'fa-solid fa-hot-tub-person', 'fa-solid fa-person-walking', 'fa-solid fa-bicycle'
+]
 
 const props = defineProps<{
   isOpen: boolean
