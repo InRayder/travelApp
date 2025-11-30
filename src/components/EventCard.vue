@@ -3,8 +3,8 @@
     class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100/50 relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:border-jp-mustard/30"
     :class="{'opacity-50 grayscale': isPast}"
   >
-    <div class="absolute top-4 right-2 w-6 h-6 flex items-center justify-center text-gray-300 cursor-grab drag-handle z-20 hover:text-jp-mustard">
-      <font-awesome-icon icon="fa-solid fa-grip-vertical" />
+    <div class="absolute top-4 right-2 w-8 h-8 flex items-center justify-center text-gray-300 cursor-grab drag-handle z-20 hover:text-jp-mustard">
+      <font-awesome-icon icon="fa-solid fa-grip-vertical" class="text-lg" />
     </div>
     <div class="absolute -bottom-4 -right-4 text-6xl opacity-[0.07] transform -rotate-12 pointer-events-none select-none" :class="getCategoryIconColor(item.category)">
       <font-awesome-icon :icon="getCategoryIcon(item.category)" />
@@ -21,35 +21,35 @@
     </div>
 
     <div class="flex gap-2 mb-3 relative z-10">
-      <a :href="getGoogleMapLink(item.location || item.title)" target="_blank" class="w-7 h-7 flex items-center justify-center rounded-full bg-gray-50 text-jp-gray hover:bg-blue-50 hover:text-blue-500 transition-colors">
-        <font-awesome-icon icon="fa-solid fa-location-dot" class="text-xs" />
+      <a :href="getGoogleMapLink(item.location || item.title)" target="_blank" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 text-jp-gray hover:bg-blue-50 hover:text-blue-500 transition-colors">
+        <font-awesome-icon icon="fa-solid fa-location-dot" class="text-sm" />
       </a>
       
       <!-- 智慧導覽按鈕 (SMART GUIDE BUTTON) -->
-      <button v-if="hasGuide" @click="emit('open-guide', item)" class="w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-jp-red hover:bg-jp-red hover:text-white transition-colors animate-fade-in shadow-sm" title="查看深度導覽">
-        <font-awesome-icon icon="fa-solid fa-book-open" class="text-xs" />
+      <button v-if="hasGuide" @click="emit('open-guide', item)" class="w-9 h-9 flex items-center justify-center rounded-full bg-red-50 text-jp-red hover:bg-jp-red hover:text-white transition-colors animate-fade-in shadow-sm" title="查看深度導覽">
+        <font-awesome-icon icon="fa-solid fa-book-open" class="text-sm" />
       </button>
 
-      <a v-if="item.category === 'food' && item.link && store.settings.currency === 'JPY'" :href="item.link" target="_blank" class="w-7 h-7 flex items-center justify-center rounded-full bg-gray-50 text-jp-gray hover:bg-orange-50 hover:text-orange-500 transition-colors">
-        <font-awesome-icon icon="fa-solid fa-bowl-food" class="text-xs" />
+      <a v-if="item.category === 'food' && item.link && store.settings.currency === 'JPY'" :href="item.link" target="_blank" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 text-jp-gray hover:bg-orange-50 hover:text-orange-500 transition-colors">
+        <font-awesome-icon icon="fa-solid fa-bowl-food" class="text-sm" />
       </a>
-      <a v-if="item.category === 'stay' && item.bookingLink" :href="item.bookingLink" target="_blank" class="w-7 h-7 flex items-center justify-center rounded-full bg-gray-50 text-jp-gray hover:bg-blue-50 hover:text-blue-600 transition-colors">
-        <font-awesome-icon icon="fa-solid fa-calendar-check" class="text-xs" />
+      <a v-if="item.category === 'stay' && item.bookingLink" :href="item.bookingLink" target="_blank" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 text-jp-gray hover:bg-blue-50 hover:text-blue-600 transition-colors">
+        <font-awesome-icon icon="fa-solid fa-calendar-check" class="text-sm" />
       </a>
-      <a v-if="item.category === 'fun' && item.ticketLink" :href="item.ticketLink" target="_blank" class="w-7 h-7 flex items-center justify-center rounded-full bg-gray-50 text-jp-gray hover:bg-orange-50 hover:text-orange-600 transition-colors">
-        <font-awesome-icon icon="fa-solid fa-ticket" class="text-xs" />
+      <a v-if="item.category === 'fun' && item.ticketLink" :href="item.ticketLink" target="_blank" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 text-jp-gray hover:bg-orange-50 hover:text-orange-600 transition-colors">
+        <font-awesome-icon icon="fa-solid fa-ticket" class="text-sm" />
       </a>
-      <button v-if="item.category === 'shop' && item.discounts && item.discounts.length > 0" @click="emit('open-discount', item)" class="w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition-colors">
-        <font-awesome-icon icon="fa-solid fa-tags" class="text-xs" />
+      <button v-if="item.category === 'shop' && item.discounts && item.discounts.length > 0" @click="emit('open-discount', item)" class="w-9 h-9 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition-colors">
+        <font-awesome-icon icon="fa-solid fa-tags" class="text-sm" />
       </button>
       
       <!-- 記帳按鈕 (EXPENSE BUTTON) -->
-      <button @click="emit('open-expense', item)" class="w-7 h-7 flex items-center justify-center rounded-full bg-gray-50 text-jp-gray hover:bg-green-50 hover:text-jp-accent-green transition-colors" title="記帳">
-        <font-awesome-icon icon="fa-solid fa-coins" class="text-xs" />
+      <button @click="emit('open-expense', item)" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 text-jp-gray hover:bg-green-50 hover:text-jp-accent-green transition-colors" title="記帳">
+        <font-awesome-icon icon="fa-solid fa-coins" class="text-sm" />
       </button>
       
-      <button @click="() => { console.log('Edit clicked'); emit('click-edit', item, index); }" class="w-7 h-7 flex items-center justify-center rounded-full bg-gray-50 text-jp-gray hover:bg-jp-yellow hover:text-jp-mustard transition-colors">
-        <font-awesome-icon icon="fa-solid fa-pen" class="text-xs" />
+      <button @click="() => { console.log('Edit clicked'); emit('click-edit', item, index); }" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 text-jp-gray hover:bg-jp-yellow hover:text-jp-mustard transition-colors">
+        <font-awesome-icon icon="fa-solid fa-pen" class="text-sm" />
       </button>
     </div>
 

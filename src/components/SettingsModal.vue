@@ -59,9 +59,59 @@
             <button @click="handleExport" class="w-full py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 font-bold hover:bg-gray-100 flex items-center justify-center gap-2 text-sm">
               <font-awesome-icon icon="fa-solid fa-file-export" /> 匯出備份 (JSON)
             </button>
-            <button @click="handleImport" class="w-full py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 font-bold hover:bg-gray-100 flex items-center justify-center gap-2 text-sm">
-              <font-awesome-icon icon="fa-solid fa-file-import" /> 匯入備份 (JSON)
-            </button>
+            <!-- Import Section -->
+            <div class="space-y-2">
+              <button @click="showImportOptions = !showImportOptions" class="w-full py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 font-bold hover:bg-gray-100 flex items-center justify-center gap-2 text-sm">
+                <font-awesome-icon icon="fa-solid fa-file-import" /> 匯入備份 (JSON)
+                <font-awesome-icon :icon="showImportOptions ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'" class="text-xs text-gray-400 ml-1" />
+              </button>
+              
+              <transition name="fade">
+                <div v-if="showImportOptions" class="bg-gray-50 rounded-xl p-3 border border-gray-200 space-y-3">
+                  <div class="flex gap-2 border-b border-gray-200 pb-2">
+                    <button 
+                      @click="importMode = 'file'" 
+                      class="flex-1 py-1 text-xs font-bold rounded transition-colors"
+                      :class="importMode === 'file' ? 'bg-white shadow text-jp-dark' : 'text-gray-400 hover:text-gray-600'"
+                    >
+                      檔案匯入
+                    </button>
+                    <button 
+                      @click="importMode = 'text'" 
+                      class="flex-1 py-1 text-xs font-bold rounded transition-colors"
+                      :class="importMode === 'text' ? 'bg-white shadow text-jp-dark' : 'text-gray-400 hover:text-gray-600'"
+                    >
+                      文字貼上
+                    </button>
+                  </div>
+
+                  <!-- File Import Mode -->
+                  <div v-if="importMode === 'file'" class="text-center py-2">
+                    <button @click="triggerFileImport" class="px-4 py-2 bg-jp-dark text-white rounded-lg text-xs font-bold hover:bg-gray-700 transition-colors flex items-center gap-2 mx-auto">
+                      <font-awesome-icon icon="fa-solid fa-folder-open" /> 選擇 JSON 檔案
+                    </button>
+                    <p class="text-[10px] text-gray-400 mt-2">支援 .json 格式備份檔</p>
+                  </div>
+
+                  <!-- Text Import Mode -->
+                  <div v-else class="space-y-2">
+                    <textarea 
+                      v-model="importText"
+                      class="w-full h-24 p-2 rounded border border-gray-300 bg-white text-[10px] font-mono leading-tight resize-none focus:outline-none focus:border-jp-mustard"
+                      placeholder="在此貼上 JSON 內容..."
+                    ></textarea>
+                    <button 
+                      @click="handleTextImport" 
+                      class="w-full py-2 bg-jp-mustard text-white rounded-lg text-xs font-bold hover:bg-yellow-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      :disabled="!importText"
+                    >
+                      確認匯入
+                    </button>
+                  </div>
+                </div>
+              </transition>
+            </div>
+
             <button @click="handleLoadExample" class="w-full py-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 font-bold hover:bg-blue-100 flex items-center justify-center gap-2 text-sm">
               <font-awesome-icon icon="fa-solid fa-book-open" /> 載入範例行程
             </button>
@@ -204,7 +254,60 @@ const handleExport = () => {
 }
 
 
-const handleImport = () => {
+const showImportOptions = ref(false)
+const importMode = ref<'file' | 'text'>('file')
+const importText = ref('')
+
+const processImportData = (jsonString: string) => {
+  try {
+    // Try to parse to ensure it's valid JSON
+    const parsed = JSON.parse(jsonString)
+    
+    // Handle potential double-stringified legacy format (just in case)
+    const finalData = typeof parsed === 'string' ? parsed : JSON.stringify(parsed)
+    
+    if (finalData) {
+       // Sanitize data: Ensure transport events have a transport object
+       const parsedData = JSON.parse(finalData)
+       if (parsedData.days) {
+         parsedData.days.forEach((day: any) => {
+           if (day.events) {
+             day.events.forEach((event: any) => {
+               if (event.category === 'transport' && !event.transport) {
+                 event.transport = {
+                   type: 'walk',
+                   company: '',
+                   line: '',
+                   direction: '',
+                   dep: event.time,
+                   arr: event.endTime || event.time,
+                   cost: 0,
+                   note: '預設步行'
+                 }
+               }
+             })
+           }
+         })
+         // Re-stringify to save
+         localStorage.setItem('easy_trip_data_v7', JSON.stringify(parsedData))
+       } else {
+         localStorage.setItem('easy_trip_data_v7', finalData)
+       }
+       
+       store.loadData()
+       openAlert('資料匯入成功')
+       emit('close')
+       // Reset state
+       showImportOptions.value = false
+       importText.value = ''
+    }
+  } catch (err) {
+    openAlert('匯入失敗：格式錯誤')
+    console.error(err)
+  }
+}
+
+const triggerFileImport = () => {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = '.json'
@@ -214,54 +317,17 @@ const handleImport = () => {
     if (!file) return
     const reader = new FileReader()
     reader.onload = (res) => {
-      try {
-        const result = res.target?.result as string
-        // Try to parse to ensure it's valid JSON
-        const parsed = JSON.parse(result)
-        
-        // Handle potential double-stringified legacy format (just in case)
-        const finalData = typeof parsed === 'string' ? parsed : JSON.stringify(parsed)
-        
-        if (finalData) {
-           // Sanitize data: Ensure transport events have a transport object
-           const parsedData = JSON.parse(finalData)
-           if (parsedData.days) {
-             parsedData.days.forEach((day: any) => {
-               if (day.events) {
-                 day.events.forEach((event: any) => {
-                   if (event.category === 'transport' && !event.transport) {
-                     event.transport = {
-                       type: 'walk',
-                       company: '',
-                       line: '',
-                       direction: '',
-                       dep: event.time,
-                       arr: event.endTime || event.time,
-                       cost: 0,
-                       note: '預設步行'
-                     }
-                   }
-                 })
-               }
-             })
-             // Re-stringify to save
-             localStorage.setItem('easy_trip_data_v7', JSON.stringify(parsedData))
-           } else {
-             localStorage.setItem('easy_trip_data_v7', finalData)
-           }
-           
-           store.loadData()
-           openAlert('資料匯入成功')
-           emit('close')
-        }
-      } catch (err) {
-        openAlert('匯入失敗：格式錯誤')
-        console.error(err)
-      }
+      const result = res.target?.result as string
+      processImportData(result)
     }
     reader.readAsText(file)
   }
   input.click()
+}
+
+const handleTextImport = () => {
+  if (!importText.value) return
+  processImportData(importText.value)
 }
 
 const updateCurrency = (e: Event) => {

@@ -2,7 +2,12 @@
   <div class="flex flex-col h-full">
     <DateSelector :days="days" :currentDayIndex="currentDayIndex" @select-day="selectDay" />
 
-    <main class="flex-1 overflow-y-auto relative bg-jp-cream scroll-smooth" id="main-scroll">
+    <main 
+      class="flex-1 overflow-y-auto relative bg-jp-cream scroll-smooth" 
+      id="main-scroll"
+      @touchstart="handleTouchStart"
+      @touchend="handleTouchEnd"
+    >
       <div class="pt-6 pb-24 min-h-full">
         <!-- 拖曳容器 (Draggable Container) -->
         <div ref="eventsList" class="sortable-list">
@@ -16,8 +21,8 @@
               <div class="absolute top-3 bottom-[-1.5rem] timeline-line z-0"></div>
               <div class="w-3 h-3 bg-white border-2 border-gray-300 rounded-full z-10 relative mt-2 transition-transform duration-200" :class="{ 'scale-125 border-jp-mustard': isDragging }"></div>
               <div class="absolute -bottom-4 left-1/2 -translate-x-1/2 z-30 timeline-insert-btn opacity-0 transition-all duration-200 transform scale-50">
-                <button @click.stop="openInsertModal(idx)" class="w-6 h-6 rounded-full bg-jp-mustard text-white flex items-center justify-center shadow-lg hover:scale-110" title="在此處插入行程">
-                  <font-awesome-icon icon="fa-solid fa-plus" class="text-[10px]" />
+                <button @click.stop="openInsertModal(idx)" class="w-8 h-8 rounded-full bg-jp-mustard text-white flex items-center justify-center shadow-lg hover:scale-110" title="在此處插入行程">
+                  <font-awesome-icon icon="fa-solid fa-plus" class="text-xs" />
                 </button>
               </div>
             </div>
@@ -590,4 +595,43 @@ const getCategoryColor = (cat: string) => {
   const map: Record<string, string> = { flight: 'bg-blue-400', transport: 'bg-jp-accent-blue', stay: 'bg-purple-400', food: 'bg-orange-400', fun: 'bg-jp-mustard', shop: 'bg-pink-400' }
   return map[cat] || 'bg-gray-400'
 }
+// 觸控滑動邏輯 (Touch Swipe Logic)
+const touchStartX = ref(0)
+const touchStartY = ref(0)
+
+const handleTouchStart = (e: TouchEvent) => {
+  touchStartX.value = e.changedTouches[0].screenX
+  touchStartY.value = e.changedTouches[0].screenY
+}
+
+const handleTouchEnd = (e: TouchEvent) => {
+  const touchEndX = e.changedTouches[0].screenX
+  const touchEndY = e.changedTouches[0].screenY
+  
+  handleSwipeGesture(touchStartX.value, touchStartY.value, touchEndX, touchEndY)
+}
+
+const handleSwipeGesture = (startX: number, startY: number, endX: number, endY: number) => {
+  const diffX = endX - startX
+  const diffY = endY - startY
+  
+  // 閾值設定 (Thresholds)
+  const minSwipeDistance = 50 // 最小滑動距離
+  const maxVerticalDistance = 30 // 最大垂直偏移 (避免誤觸捲動)
+
+  if (Math.abs(diffX) > minSwipeDistance && Math.abs(diffY) < maxVerticalDistance) {
+    if (diffX > 0) {
+      // 向右滑 (Swipe Right) -> 上一天
+      if (currentDayIndex.value > 0) {
+        selectDay(currentDayIndex.value - 1)
+      }
+    } else {
+      // 向左滑 (Swipe Left) -> 下一天
+      if (currentDayIndex.value < days.value.length - 1) {
+        selectDay(currentDayIndex.value + 1)
+      }
+    }
+  }
+}
+
 </script>

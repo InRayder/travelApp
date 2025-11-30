@@ -63,9 +63,7 @@
       @save="saveExpense"
       @delete="deleteExpense"
     />
-      @delete="deleteExpense"
-    />
-
+    
     <ConfirmModal
       :isOpen="confirmModalOpen"
       :title="confirmTitle"
