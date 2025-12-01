@@ -2,253 +2,310 @@
   <transition name="fade">
     <div v-if="isOpen" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
       <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="emit('close')"></div>
-      <div class="bg-white w-full max-w-xs rounded-2xl shadow-2xl p-6 relative z-10 max-h-[80vh] overflow-y-auto hide-scrollbar">
-        <h3 class="text-xl font-bold text-jp-dark mb-6 text-center">設定</h3>
+      <div class="bg-white w-full max-w-xs rounded-2xl shadow-2xl overflow-hidden relative z-10 max-h-[85vh] flex flex-col">
         
-        <div class="space-y-4">
-          <!-- 設定區塊 (Settings Section) -->
-          <div class="space-y-3">
-            <label class="block text-xs font-bold text-gray-500">旅遊標題</label>
-            <input 
-              type="text" 
-              v-model="localTitle" 
-              @change="saveTripInfo"
-              class="w-full p-2 rounded-lg bg-gray-50 border border-gray-200 text-sm outline-none focus:border-jp-mustard"
-              placeholder="輸入旅遊標題"
+        <!-- Header & Tabs -->
+        <div class="bg-white border-b border-gray-100 shrink-0">
+          <h3 class="text-lg font-bold text-jp-dark py-4 text-center">設定</h3>
+          
+          <div class="flex px-2">
+            <button 
+              v-for="tab in tabs" 
+              :key="tab.id"
+              @click="activeTab = tab.id"
+              class="flex-1 pb-2 text-xs font-bold border-b-2 transition-colors relative"
+              :class="activeTab === tab.id ? 'text-jp-red border-jp-red' : 'text-gray-400 border-transparent hover:text-gray-600'"
             >
-
-            <label class="block text-xs font-bold text-gray-500">開始日期</label>
-            <input 
-              type="date" 
-              v-model="localStartDate" 
-              @change="saveTripInfo"
-              class="w-full p-2 rounded-lg bg-gray-50 border border-gray-200 text-sm outline-none focus:border-jp-mustard"
-            >
-
-            <label class="block text-xs font-bold text-gray-500">旅伴設定</label>
-            <div class="space-y-2">
-              <div v-for="(_, index) in localTravelers" :key="index" class="flex gap-2">
-                <input 
-                  type="text" 
-                  v-model="localTravelers[index]"
-                  @change="saveTripInfo"
-                  class="flex-1 p-2 rounded-lg bg-gray-50 border border-gray-200 text-sm outline-none focus:border-jp-mustard"
-                  placeholder="輸入旅伴姓名"
-                >
-                <button @click="removeTraveler(index)" class="text-gray-400 hover:text-red-500 px-2" v-if="localTravelers.length > 1">
-                  <font-awesome-icon icon="fa-solid fa-trash" />
-                </button>
-              </div>
-              <button @click="addTraveler" class="text-xs text-jp-dark font-bold hover:underline flex items-center gap-1">
-                <font-awesome-icon icon="fa-solid fa-plus" /> 新增旅伴
-              </button>
-            </div>
-
-            <label class="block text-xs font-bold text-gray-500">預設幣別 / 旅遊國家</label>
-            <select :value="store.settings.currency" @change="updateCurrency" class="w-full p-2 rounded-lg bg-gray-50 border border-gray-200 text-sm outline-none focus:border-jp-mustard">
-              <option v-for="(info, code) in store.currencies" :key="code" :value="code">
-                {{ info.name }} ({{ info.symbol }})
-              </option>
-            </select>
-
-            <div class="space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-200 mt-2">
-              <div class="flex items-center justify-between" v-if="store.currencies['TWD']">
-                <div class="text-xs font-bold text-gray-600">匯率設定 (1 JPY = ? TWD)</div>
-                <div class="flex items-center gap-2">
-                  <input 
-                    type="number" 
-                    :value="store.currencies['TWD'].rate" 
-                    @input="(e) => updateRate('TWD', e)"
-                    step="0.0001"
-                    class="w-20 p-1.5 rounded bg-white border border-gray-200 text-xs text-right font-mono outline-none focus:border-jp-mustard"
-                  >
-                </div>
-              </div>
-            </div>
-
-            <label class="block text-xs font-bold text-gray-500">時間格式</label>
-            <div class="flex bg-gray-50 p-1 rounded-lg border border-gray-200">
-              <button 
-                @click="store.updateSettings({ timeFormat: '24h' })"
-                class="flex-1 py-1.5 text-xs font-bold rounded transition-all"
-                :class="store.settings.timeFormat === '24h' ? 'bg-white shadow text-jp-dark' : 'text-gray-400 hover:text-gray-600'"
-              >
-                24小時制 (14:00)
-              </button>
-              <button 
-                @click="store.updateSettings({ timeFormat: '12h' })"
-                class="flex-1 py-1.5 text-xs font-bold rounded transition-all"
-                :class="store.settings.timeFormat === '12h' ? 'bg-white shadow text-jp-dark' : 'text-gray-400 hover:text-gray-600'"
-              >
-                12小時制 (2:00 PM)
-              </button>
-            </div>
-
-
+              {{ tab.name }}
+            </button>
           </div>
-
-          <hr class="border-gray-100">
-
-          <!-- 交通票券管理 (Transport Pass Management) -->
-          <div class="space-y-3">
-            <label class="block text-xs font-bold text-gray-500">交通票券管理</label>
-            
-            <!-- Pass List -->
-            <div class="space-y-2">
-              <div v-for="pass in store.passes" :key="pass.id" class="flex items-center gap-3 bg-gray-50 p-2 rounded-lg border border-gray-200">
-                <div class="w-10 h-10 rounded bg-gray-200 overflow-hidden flex-shrink-0">
-                  <img :src="pass.imageUrl" class="w-full h-full object-cover" />
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="text-xs font-bold text-jp-dark truncate">{{ pass.name }}</div>
-                </div>
-                <button @click="removePass(pass.id)" class="text-gray-400 hover:text-red-500 px-2">
-                  <font-awesome-icon icon="fa-solid fa-trash" />
-                </button>
-              </div>
-            </div>
-
-            <!-- Add Pass Form -->
-            <div class="bg-gray-50 p-3 rounded-xl border border-dashed border-gray-300 space-y-2">
+        </div>
+        
+        <!-- Content Scrollable Area -->
+        <div class="flex-1 overflow-y-auto hide-scrollbar p-6">
+          
+          <!-- Tab 1: 行程 (Trip) -->
+          <div v-if="activeTab === 'trip'" class="space-y-4">
+            <div class="space-y-3">
+              <label class="block text-xs font-bold text-gray-500">旅遊標題</label>
               <input 
                 type="text" 
-                v-model="newPassName"
-                class="w-full p-2 rounded bg-white border border-gray-200 text-xs outline-none focus:border-jp-mustard"
-                placeholder="票券名稱 (e.g. JR Pass)"
+                v-model="localTitle" 
+                @change="saveTripInfo"
+                class="w-full p-2 rounded-lg bg-gray-50 border border-gray-200 text-sm outline-none focus:border-jp-mustard"
+                placeholder="輸入旅遊標題"
               >
-              <div class="flex gap-2">
-                <button @click="triggerPassImageUpload" class="flex-1 py-2 bg-white border border-gray-200 text-gray-500 rounded text-xs hover:bg-gray-50 truncate px-2">
-                  <font-awesome-icon icon="fa-solid fa-image" /> {{ newPassImage ? '已選擇圖片' : '上傳圖片' }}
-                </button>
-                <button 
-                  @click="addPass" 
-                  class="flex-1 py-2 bg-jp-mustard text-white rounded text-xs font-bold hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                  :disabled="!newPassName || !newPassImage"
-                >
-                  新增票券
+
+              <label class="block text-xs font-bold text-gray-500">開始日期</label>
+              <input 
+                type="date" 
+                v-model="localStartDate" 
+                @change="saveTripInfo"
+                class="w-full p-2 rounded-lg bg-gray-50 border border-gray-200 text-sm outline-none focus:border-jp-mustard"
+              >
+
+              <label class="block text-xs font-bold text-gray-500">旅伴設定</label>
+              <div class="space-y-2">
+                <div v-for="(_, index) in localTravelers" :key="index" class="flex gap-2">
+                  <input 
+                    type="text" 
+                    v-model="localTravelers[index]"
+                    @change="saveTripInfo"
+                    class="flex-1 p-2 rounded-lg bg-gray-50 border border-gray-200 text-sm outline-none focus:border-jp-mustard"
+                    placeholder="輸入旅伴姓名"
+                  >
+                  <button @click="removeTraveler(index)" class="text-gray-400 hover:text-red-500 px-2" v-if="localTravelers.length > 1">
+                    <font-awesome-icon icon="fa-solid fa-trash" />
+                  </button>
+                </div>
+                <button @click="addTraveler" class="text-xs text-jp-dark font-bold hover:underline flex items-center gap-1">
+                  <font-awesome-icon icon="fa-solid fa-plus" /> 新增旅伴
                 </button>
               </div>
             </div>
           </div>
 
+          <!-- Tab 2: 偏好 (Preferences) -->
+          <div v-if="activeTab === 'prefs'" class="space-y-4">
+            <div class="space-y-3">
+              <label class="block text-xs font-bold text-gray-500">預設幣別 / 旅遊國家</label>
+              <select :value="store.settings.currency" @change="updateCurrency" class="w-full p-2 rounded-lg bg-gray-50 border border-gray-200 text-sm outline-none focus:border-jp-mustard">
+                <option v-for="(info, code) in store.currencies" :key="code" :value="code">
+                  {{ info.name }} ({{ info.symbol }})
+                </option>
+              </select>
 
-
-          <hr class="border-gray-100">
-
-          <!-- 資料管理 (Data Management) -->
-          <div class="space-y-2">
-            <!-- Export Section -->
-            <div class="space-y-2">
-              <button @click="showExportOptions = !showExportOptions" class="w-full py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 font-bold hover:bg-gray-100 flex items-center justify-center gap-2 text-sm">
-                <font-awesome-icon icon="fa-solid fa-file-export" /> 匯出備份 (JSON)
-                <font-awesome-icon :icon="showExportOptions ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'" class="text-xs text-gray-400 ml-1" />
-              </button>
-              
-              <transition name="fade">
-                <div v-if="showExportOptions" class="bg-gray-50 rounded-xl p-3 border border-gray-200 space-y-3">
-                  <div class="grid grid-cols-2 gap-2">
-                    <button @click="handleExportFile" class="py-2 bg-white border border-gray-200 text-jp-dark rounded-lg text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                      <font-awesome-icon icon="fa-solid fa-download" /> 下載檔案
-                    </button>
-                    <button @click="handleExportCopy" class="py-2 bg-jp-dark text-white rounded-lg text-xs font-bold hover:bg-gray-700 transition-colors flex items-center justify-center gap-2">
-                      <font-awesome-icon icon="fa-solid fa-copy" /> {{ exportCopyStatus }}
-                    </button>
+              <div class="space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-200 mt-2">
+                <div class="flex items-center justify-between" v-if="store.currencies['TWD']">
+                  <div class="text-xs font-bold text-gray-600">匯率設定 (1 JPY = ? TWD)</div>
+                  <div class="flex items-center gap-2">
+                    <input 
+                      type="number" 
+                      :value="store.currencies['TWD'].rate" 
+                      @input="(e) => updateRate('TWD', e)"
+                      step="0.0001"
+                      class="w-20 p-1.5 rounded bg-white border border-gray-200 text-xs text-right font-mono outline-none focus:border-jp-mustard"
+                    >
                   </div>
                 </div>
-              </transition>
-            </div>
-            <!-- Import Section -->
-            <div class="space-y-2">
-              <button @click="showImportOptions = !showImportOptions" class="w-full py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 font-bold hover:bg-gray-100 flex items-center justify-center gap-2 text-sm">
-                <font-awesome-icon icon="fa-solid fa-file-import" /> 匯入備份 (JSON)
-                <font-awesome-icon :icon="showImportOptions ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'" class="text-xs text-gray-400 ml-1" />
-              </button>
-              
-              <transition name="fade">
-                <div v-if="showImportOptions" class="bg-gray-50 rounded-xl p-3 border border-gray-200 space-y-3">
-                  <div class="flex gap-2 border-b border-gray-200 pb-2">
-                    <button 
-                      @click="importMode = 'file'" 
-                      class="flex-1 py-1 text-xs font-bold rounded transition-colors"
-                      :class="importMode === 'file' ? 'bg-white shadow text-jp-dark' : 'text-gray-400 hover:text-gray-600'"
-                    >
-                      檔案匯入
-                    </button>
-                    <button 
-                      @click="importMode = 'text'" 
-                      class="flex-1 py-1 text-xs font-bold rounded transition-colors"
-                      :class="importMode === 'text' ? 'bg-white shadow text-jp-dark' : 'text-gray-400 hover:text-gray-600'"
-                    >
-                      文字貼上
-                    </button>
-                  </div>
+              </div>
 
-                  <!-- File Import Mode -->
-                  <div v-if="importMode === 'file'" class="text-center py-2">
-                    <button @click="triggerFileImport" class="px-4 py-2 bg-jp-dark text-white rounded-lg text-xs font-bold hover:bg-gray-700 transition-colors flex items-center gap-2 mx-auto">
-                      <font-awesome-icon icon="fa-solid fa-folder-open" /> 選擇 JSON 檔案
-                    </button>
-                    <p class="text-[10px] text-gray-400 mt-2">支援 .json 格式備份檔</p>
-                  </div>
+              <label class="block text-xs font-bold text-gray-500">時間格式</label>
+              <div class="flex bg-gray-50 p-1 rounded-lg border border-gray-200">
+                <button 
+                  @click="store.updateSettings({ timeFormat: '24h' })"
+                  class="flex-1 py-1.5 text-xs font-bold rounded transition-all"
+                  :class="store.settings.timeFormat === '24h' ? 'bg-white shadow text-jp-dark' : 'text-gray-400 hover:text-gray-600'"
+                >
+                  24小時制 (14:00)
+                </button>
+                <button 
+                  @click="store.updateSettings({ timeFormat: '12h' })"
+                  class="flex-1 py-1.5 text-xs font-bold rounded transition-all"
+                  :class="store.settings.timeFormat === '12h' ? 'bg-white shadow text-jp-dark' : 'text-gray-400 hover:text-gray-600'"
+                >
+                  12小時制 (2:00 PM)
+                </button>
+              </div>
 
-                  <!-- Text Import Mode -->
-                  <div v-else class="space-y-2">
-                    <textarea 
-                      v-model="importText"
-                      class="w-full h-24 p-2 rounded border border-gray-300 bg-white text-[10px] font-mono leading-tight resize-none focus:outline-none focus:border-jp-mustard"
-                      placeholder="在此貼上 JSON 內容..."
-                    ></textarea>
-                    <button 
-                      @click="handleTextImport" 
-                      class="w-full py-2 bg-jp-mustard text-white rounded-lg text-xs font-bold hover:bg-yellow-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      :disabled="!importText"
-                    >
-                      確認匯入
-                    </button>
+              <label class="block text-xs font-bold text-gray-500">日語語音設定</label>
+              <div class="flex gap-2">
+                <div class="relative flex-1">
+                  <select 
+                    :value="store.settings.voiceURI" 
+                    @change="updateVoice" 
+                    class="w-full p-2 rounded-lg bg-gray-50 border border-gray-200 text-sm outline-none focus:border-jp-mustard appearance-none"
+                  >
+                    <option value="">預設語音</option>
+                    <option v-for="voice in availableVoices" :key="voice.voiceURI" :value="voice.voiceURI">
+                      {{ voice.name }}
+                    </option>
+                  </select>
+                  <div class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-xs">
+                    <font-awesome-icon icon="fa-solid fa-chevron-down" />
                   </div>
                 </div>
-              </transition>
-            </div>
-
-            <button @click="handleLoadExample" class="w-full py-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 font-bold hover:bg-blue-100 flex items-center justify-center gap-2 text-sm">
-              <font-awesome-icon icon="fa-solid fa-book-open" /> 載入範例行程
-            </button>
-            <button @click="showAiHelper = !showAiHelper" class="w-full py-3 rounded-xl bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-100 text-purple-700 font-bold hover:from-purple-100 hover:to-blue-100 flex items-center justify-center gap-2 text-sm">
-              <font-awesome-icon icon="fa-solid fa-wand-magic-sparkles" /> AI 行程轉換助手
-            </button>
-          </div>
-
-          <!-- AI Helper Content -->
-          <div v-if="showAiHelper" class="bg-gray-50 rounded-xl p-4 border border-gray-200 text-xs space-y-3">
-            <p class="font-bold text-gray-700">使用說明：</p>
-            <ol class="list-decimal list-inside text-gray-600 space-y-1 ml-1">
-              <li>複製下方的 Prompt 指令</li>
-              <li>開啟 ChatGPT / Gemini 等 AI 工具</li>
-              <li>貼上指令，並附上您的 Excel 行程文字</li>
-              <li>將 AI 產生的 JSON 貼回上方的「匯入備份」</li>
-            </ol>
-            <div class="relative">
-              <textarea 
-                readonly 
-                class="w-full h-32 p-2 rounded border border-gray-300 bg-white text-[10px] font-mono leading-tight resize-none focus:outline-none"
-                :value="aiPrompt"
-              ></textarea>
-              <button @click="copyPrompt" class="absolute top-2 right-2 bg-jp-dark text-white px-2 py-1 rounded text-[10px] hover:bg-gray-700 transition-colors">
-                {{ copyStatus }}
-              </button>
+                <button 
+                  @click="previewVoice" 
+                  class="px-3 rounded-lg bg-gray-100 border border-gray-200 text-gray-600 hover:bg-jp-red hover:text-white hover:border-jp-red transition-all active:scale-95 flex items-center justify-center"
+                  title="試聽語音"
+                >
+                  <font-awesome-icon icon="fa-solid fa-play" />
+                </button>
+              </div>
             </div>
           </div>
 
-          <hr class="border-gray-100 mb-3">
+          <!-- Tab 3: 票券 (Passes) -->
+          <div v-if="activeTab === 'passes'" class="space-y-4">
+            <div class="space-y-3">
+              <label class="block text-xs font-bold text-gray-500">交通票券管理</label>
+              
+              <!-- Pass List -->
+              <div class="space-y-2">
+                <div v-for="pass in store.passes" :key="pass.id" class="flex items-center gap-3 bg-gray-50 p-2 rounded-lg border border-gray-200">
+                  <div class="w-10 h-10 rounded bg-gray-200 overflow-hidden flex-shrink-0">
+                    <img :src="pass.imageUrl" class="w-full h-full object-cover" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-xs font-bold text-jp-dark truncate">{{ pass.name }}</div>
+                  </div>
+                  <button @click="removePass(pass.id)" class="text-gray-400 hover:text-red-500 px-2">
+                    <font-awesome-icon icon="fa-solid fa-trash" />
+                  </button>
+                </div>
+                <div v-if="store.passes.length === 0" class="text-center py-4 text-gray-400 text-xs">
+                  尚無票券
+                </div>
+              </div>
 
-          <button @click="handleReset" class="w-full py-3 rounded-xl bg-red-50 text-red-500 font-bold hover:bg-red-100 flex items-center justify-center gap-2 text-sm">
-            <font-awesome-icon icon="fa-solid fa-trash-can" /> 清空所有資料
-          </button>
+              <!-- Add Pass Form -->
+              <div class="bg-gray-50 p-3 rounded-xl border border-dashed border-gray-300 space-y-2">
+                <input 
+                  type="text" 
+                  v-model="newPassName"
+                  class="w-full p-2 rounded bg-white border border-gray-200 text-xs outline-none focus:border-jp-mustard"
+                  placeholder="票券名稱 (e.g. JR Pass)"
+                >
+                <div class="flex gap-2">
+                  <button @click="triggerPassImageUpload" class="flex-1 py-2 bg-white border border-gray-200 text-gray-500 rounded text-xs hover:bg-gray-50 truncate px-2">
+                    <font-awesome-icon icon="fa-solid fa-image" /> {{ newPassImage ? '已選擇圖片' : '上傳圖片' }}
+                  </button>
+                  <button 
+                    @click="addPass" 
+                    class="flex-1 py-2 bg-jp-mustard text-white rounded text-xs font-bold hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    :disabled="!newPassName || !newPassImage"
+                  >
+                    新增票券
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 4: 系統 (System) -->
+          <div v-if="activeTab === 'system'" class="space-y-4">
+            <div class="space-y-2">
+              <label class="block text-xs font-bold text-gray-500">資料管理</label>
+              
+              <!-- Export Section -->
+              <div class="space-y-2">
+                <button @click="showExportOptions = !showExportOptions" class="w-full py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 font-bold hover:bg-gray-100 flex items-center justify-center gap-2 text-sm">
+                  <font-awesome-icon icon="fa-solid fa-file-export" /> 匯出備份 (JSON)
+                  <font-awesome-icon :icon="showExportOptions ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'" class="text-xs text-gray-400 ml-1" />
+                </button>
+                
+                <transition name="fade">
+                  <div v-if="showExportOptions" class="bg-gray-50 rounded-xl p-3 border border-gray-200 space-y-3">
+                    <div class="grid grid-cols-2 gap-2">
+                      <button @click="handleExportFile" class="py-2 bg-white border border-gray-200 text-jp-dark rounded-lg text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                        <font-awesome-icon icon="fa-solid fa-download" /> 下載檔案
+                      </button>
+                      <button @click="handleExportCopy" class="py-2 bg-jp-dark text-white rounded-lg text-xs font-bold hover:bg-gray-700 transition-colors flex items-center justify-center gap-2">
+                        <font-awesome-icon icon="fa-solid fa-copy" /> {{ exportCopyStatus }}
+                      </button>
+                    </div>
+                  </div>
+                </transition>
+              </div>
+
+              <!-- Import Section -->
+              <div class="space-y-2">
+                <button @click="showImportOptions = !showImportOptions" class="w-full py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 font-bold hover:bg-gray-100 flex items-center justify-center gap-2 text-sm">
+                  <font-awesome-icon icon="fa-solid fa-file-import" /> 匯入備份 (JSON)
+                  <font-awesome-icon :icon="showImportOptions ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'" class="text-xs text-gray-400 ml-1" />
+                </button>
+                
+                <transition name="fade">
+                  <div v-if="showImportOptions" class="bg-gray-50 rounded-xl p-3 border border-gray-200 space-y-3">
+                    <div class="flex gap-2 border-b border-gray-200 pb-2">
+                      <button 
+                        @click="importMode = 'file'" 
+                        class="flex-1 py-1 text-xs font-bold rounded transition-colors"
+                        :class="importMode === 'file' ? 'bg-white shadow text-jp-dark' : 'text-gray-400 hover:text-gray-600'"
+                      >
+                        檔案匯入
+                      </button>
+                      <button 
+                        @click="importMode = 'text'" 
+                        class="flex-1 py-1 text-xs font-bold rounded transition-colors"
+                        :class="importMode === 'text' ? 'bg-white shadow text-jp-dark' : 'text-gray-400 hover:text-gray-600'"
+                      >
+                        文字貼上
+                      </button>
+                    </div>
+
+                    <!-- File Import Mode -->
+                    <div v-if="importMode === 'file'" class="text-center py-2">
+                      <button @click="triggerFileImport" class="px-4 py-2 bg-jp-dark text-white rounded-lg text-xs font-bold hover:bg-gray-700 transition-colors flex items-center gap-2 mx-auto">
+                        <font-awesome-icon icon="fa-solid fa-folder-open" /> 選擇 JSON 檔案
+                      </button>
+                      <p class="text-[10px] text-gray-400 mt-2">支援 .json 格式備份檔</p>
+                    </div>
+
+                    <!-- Text Import Mode -->
+                    <div v-else class="space-y-2">
+                      <textarea 
+                        v-model="importText"
+                        class="w-full h-24 p-2 rounded border border-gray-300 bg-white text-[10px] font-mono leading-tight resize-none focus:outline-none focus:border-jp-mustard"
+                        placeholder="在此貼上 JSON 內容..."
+                      ></textarea>
+                      <button 
+                        @click="handleTextImport" 
+                        class="w-full py-2 bg-jp-mustard text-white rounded-lg text-xs font-bold hover:bg-yellow-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        :disabled="!importText"
+                      >
+                        確認匯入
+                      </button>
+                    </div>
+                  </div>
+                </transition>
+              </div>
+
+              <button @click="handleLoadExample" class="w-full py-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 font-bold hover:bg-blue-100 flex items-center justify-center gap-2 text-sm">
+                <font-awesome-icon icon="fa-solid fa-book-open" /> 載入範例行程
+              </button>
+              <button @click="store.openOnboarding(); emit('close')" class="w-full py-3 rounded-xl bg-orange-50 border border-orange-100 text-orange-600 font-bold hover:bg-orange-100 flex items-center justify-center gap-2 text-sm">
+                <font-awesome-icon icon="fa-solid fa-circle-info" /> 重看導覽介紹
+              </button>
+              <button @click="showAiHelper = !showAiHelper" class="w-full py-3 rounded-xl bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-100 text-purple-700 font-bold hover:from-purple-100 hover:to-blue-100 flex items-center justify-center gap-2 text-sm">
+                <font-awesome-icon icon="fa-solid fa-wand-magic-sparkles" /> AI 行程轉換助手
+              </button>
+            </div>
+
+            <!-- AI Helper Content -->
+            <div v-if="showAiHelper" class="bg-gray-50 rounded-xl p-4 border border-gray-200 text-xs space-y-3">
+              <p class="font-bold text-gray-700">使用說明：</p>
+              <ol class="list-decimal list-inside text-gray-600 space-y-1 ml-1">
+                <li>複製下方的 Prompt 指令</li>
+                <li>開啟 ChatGPT / Gemini 等 AI 工具</li>
+                <li>貼上指令，並附上您的 Excel 行程文字</li>
+                <li>將 AI 產生的 JSON 貼回上方的「匯入備份」</li>
+              </ol>
+              <div class="relative">
+                <textarea 
+                  readonly 
+                  class="w-full h-32 p-2 rounded border border-gray-300 bg-white text-[10px] font-mono leading-tight resize-none focus:outline-none"
+                  :value="aiPrompt"
+                ></textarea>
+                <button @click="copyPrompt" class="absolute top-2 right-2 bg-jp-dark text-white px-2 py-1 rounded text-[10px] hover:bg-gray-700 transition-colors">
+                  {{ copyStatus }}
+                </button>
+              </div>
+            </div>
+
+            <hr class="border-gray-100 mb-3">
+
+            <button @click="handleReset" class="w-full py-3 rounded-xl bg-red-50 text-red-500 font-bold hover:bg-red-100 flex items-center justify-center gap-2 text-sm">
+              <font-awesome-icon icon="fa-solid fa-trash-can" /> 清空所有資料
+            </button>
+          </div>
+
         </div>
 
-        <div class="mt-6 text-center">
+        <div class="p-4 border-t border-gray-100 text-center bg-white shrink-0">
           <p class="text-[10px] text-gray-400">{{ appName }} v{{ appVersion }}</p>
-          <button @click="emit('close')" class="mt-4 text-gray-400 hover:text-gray-600">
+          <button @click="emit('close')" class="mt-2 text-gray-400 hover:text-gray-600">
             <font-awesome-icon icon="fa-solid fa-times" class="text-xl" />
           </button>
         </div>
@@ -283,6 +340,15 @@ const props = defineProps<{
 const emit = defineEmits(['close'])
 
 const store = useTripStore()
+
+// Tab Logic
+const activeTab = ref('trip')
+const tabs = [
+  { id: 'trip', name: '行程' },
+  { id: 'prefs', name: '偏好' },
+  { id: 'passes', name: '票券' },
+  { id: 'system', name: '系統' }
+]
 
 // 確認視窗狀態
 const confirmModalOpen = ref(false)
@@ -474,6 +540,27 @@ const updateRate = (code: string, e: Event) => {
   }
 }
 
+const updateVoice = (e: Event) => {
+  const target = e.target as HTMLSelectElement
+  store.updateSettings({ voiceURI: target.value })
+}
+
+const previewVoice = () => {
+  const utterance = new SpeechSynthesisUtterance('こんにちは、これはテストです。') // "Hello, this is a test."
+  utterance.lang = 'ja-JP'
+  utterance.rate = 0.9
+  
+  if (store.settings.voiceURI) {
+    const voices = window.speechSynthesis.getVoices()
+    const selectedVoice = voices.find(v => v.voiceURI === store.settings.voiceURI)
+    if (selectedVoice) {
+      utterance.voice = selectedVoice
+    }
+  }
+  
+  window.speechSynthesis.speak(utterance)
+}
+
 // Trip Info Logic
 const localTitle = ref('')
 const localStartDate = ref('')
@@ -485,6 +572,7 @@ watch(() => props.isOpen, (newVal) => {
     localTitle.value = store.title
     localStartDate.value = store.startDate
     localTravelers.value = [...store.travelers]
+    loadVoices()
   }
 })
 
@@ -503,6 +591,24 @@ const addTraveler = () => {
 const removeTraveler = (index: number) => {
   localTravelers.value.splice(index, 1)
   saveTripInfo()
+}
+
+// Voice Logic
+const availableVoices = ref<SpeechSynthesisVoice[]>([])
+
+const loadVoices = () => {
+  const voices = window.speechSynthesis.getVoices()
+  // Filter for Japanese voices, but if none found, show all for debugging/fallback
+  const jpVoices = voices.filter(v => v.lang.includes('ja') || v.lang.includes('JP'))
+  availableVoices.value = jpVoices.length > 0 ? jpVoices : voices
+}
+
+// Voices are loaded asynchronously
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+  // Use addEventListener to avoid overwriting other handlers
+  window.speechSynthesis.addEventListener('voiceschanged', loadVoices)
+  // Try loading immediately
+  loadVoices()
 }
 
 // Transport Pass Logic

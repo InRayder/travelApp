@@ -21,6 +21,13 @@
       </button>
     </RouterLink>
 
+    <RouterLink to="/conversation" custom v-slot="{ navigate, isActive }">
+      <button @click="navigate" class="flex flex-col items-center gap-1 transition-colors" :class="isActive ? 'text-jp-indigo' : 'text-gray-400 hover:text-gray-600'">
+        <font-awesome-icon icon="fa-solid fa-comments" class="text-2xl" />
+        <span class="text-[10px] font-bold">對話</span>
+      </button>
+    </RouterLink>
+
 
   </nav>
 </template>

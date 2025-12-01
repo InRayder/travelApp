@@ -114,6 +114,7 @@ export interface Currency {
 export interface Settings {
     currency: string;   // 預設顯示幣別
     timeFormat?: '12h' | '24h'; // 時間格式 (12h/24h)
+    voiceURI?: string; // 語音設定
 }
 
 export interface Category {
@@ -135,6 +136,7 @@ export interface TripState {
     startDate: string;  // 開始日期 (YYYY-MM-DD)
     headerCollapsed: boolean; // 標題列是否收合
     currencies: Record<string, Currency>; // 匯率設定
+    isOnboardingOpen: boolean; // 是否顯示導覽
 }
 
 const DEFAULT_GUIDES: Record<string, Guide> = {
@@ -317,15 +319,24 @@ const DEFAULT_DATA: Partial<TripState> = {
 
 export const useTripStore = defineStore('trip', {
     state: (): TripState => ({
+        title: '我的日本之旅',
+        startDate: new Date().toISOString().slice(0, 10),
+        settings: {
+            currency: 'JPY',
+            timeFormat: '24h',
+            voiceURI: ''
+        },
+        travelers: ['我'],
         days: [],
         backups: [],
         expenses: [],
-        travelers: [],
-        attractionGuides: {},
-        settings: {
-            currency: 'JPY', // Default global currency
-            timeFormat: '24h'
+        passes: [],
+        currencies: {
+            'JPY': { name: '日圓 (日本)', symbol: '¥', rate: 1 },
+            'TWD': { name: '新台幣 (台灣)', symbol: 'NT$', rate: 0.21 }, // 預設匯率
         },
+        attractionGuides: {},
+        isOnboardingOpen: false,
         categories: [
             { id: 'fun', name: '景點', icon: 'fa-solid fa-torii-gate' },
             { id: 'food', name: '美食', icon: 'fa-solid fa-utensils' },
@@ -334,14 +345,7 @@ export const useTripStore = defineStore('trip', {
             { id: 'transport', name: '交通', icon: 'fa-solid fa-train' },
             { id: 'flight', name: '航班', icon: 'fa-solid fa-plane' },
         ],
-        passes: [],
-        title: '日本九州自由行',
-        startDate: '2025-09-10',
-        headerCollapsed: false,
-        currencies: {
-            'TWD': { symbol: 'NT$', rate: 0.22, name: '新台幣 (台灣)' }, // 1 JPY = 0.22 TWD
-            'JPY': { symbol: '¥', rate: 1, name: '日圓 (日本)' }
-        }
+        headerCollapsed: false
     }),
     getters: {
         currentCurrency(): Currency {
@@ -349,6 +353,23 @@ export const useTripStore = defineStore('trip', {
         }
     },
     actions: {
+        // Onboarding Actions
+        checkOnboarding() {
+            const seen = localStorage.getItem('has_seen_onboarding_v1')
+            if (!seen) {
+                this.isOnboardingOpen = true
+            }
+        },
+
+        completeOnboarding() {
+            this.isOnboardingOpen = false
+            localStorage.setItem('has_seen_onboarding_v1', 'true')
+        },
+
+        openOnboarding() {
+            this.isOnboardingOpen = true
+        },
+
         loadData() {
             let saved = localStorage.getItem(STORAGE_KEY)
             if (!saved) {
@@ -367,6 +388,7 @@ export const useTripStore = defineStore('trip', {
                     this.settings = parsed.settings || { currency: 'JPY', timeFormat: '24h' }
                     // Ensure timeFormat exists if loading old settings
                     if (!this.settings.timeFormat) this.settings.timeFormat = '24h'
+                    if (this.settings.voiceURI === undefined) this.settings.voiceURI = ''
 
                     this.title = parsed.title || DEFAULT_DATA.title
                     this.startDate = parsed.startDate || DEFAULT_DATA.startDate
@@ -474,7 +496,7 @@ export const useTripStore = defineStore('trip', {
             this.travelers = JSON.parse(JSON.stringify(DEFAULT_DATA.travelers))
             this.passes = []
             this.attractionGuides = JSON.parse(JSON.stringify(DEFAULT_GUIDES))
-            this.settings = { currency: 'JPY', timeFormat: '24h' }
+            this.settings = { currency: 'JPY', timeFormat: '24h', voiceURI: '' }
             this.title = DEFAULT_DATA.title || 'Easy Trip'
             this.startDate = DEFAULT_DATA.startDate || '2025-09-10'
             this.currencies = {
@@ -502,7 +524,7 @@ export const useTripStore = defineStore('trip', {
             this.travelers = ['我']
             this.passes = []
             this.attractionGuides = {}
-            this.settings = { currency: 'JPY', timeFormat: '24h' }
+            this.settings = { currency: 'JPY', timeFormat: '24h', voiceURI: '' } // Updated default settings
             this.title = '我的行程'
             this.startDate = new Date().toISOString().split('T')[0]
             this.currencies = {

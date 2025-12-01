@@ -23,6 +23,7 @@ export default {
                 'jp-accent-blue': '#5B84B1',
                 'jp-accent-green': '#8FA177',
                 'jp-red': '#D64045',
+                'jp-indigo': '#6667AB',
             },
             fontFamily: {
                 sans: ['"Noto Sans TC"', '"Noto Sans JP"', 'sans-serif'],
