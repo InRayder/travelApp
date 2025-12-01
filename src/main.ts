@@ -14,9 +14,14 @@ library.add(fas, far)
 
 import './style.css'
 
+import { createPersistedState } from 'pinia-plugin-persistedstate'
+
 const app = createApp(App)
 
-app.use(createPinia())
+const pinia = createPinia()
+pinia.use(createPersistedState())
+
+app.use(pinia)
 app.use(router)
 app.component('font-awesome-icon', FontAwesomeIcon)
 

@@ -135,6 +135,71 @@
               </div>
             </div>
           </div>
+          
+          <!-- Tab AI: AI 設定 -->
+          <div v-if="activeTab === 'ai'" class="space-y-4">
+            <div class="space-y-3">
+              <label class="block text-xs font-bold text-gray-500">Google AI Studio API Key</label>
+              <div class="relative">
+                <input 
+                  type="password" 
+                  :value="store.settings.aiSettings?.apiKey" 
+                  @input="(e) => updateAiSetting('apiKey', (e.target as HTMLInputElement).value)"
+                  class="w-full p-2 rounded-lg bg-gray-50 border border-gray-200 text-sm outline-none focus:border-jp-mustard pr-8"
+                  placeholder="輸入 API Key"
+                >
+                <div class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
+                  <font-awesome-icon icon="fa-solid fa-key" />
+                </div>
+              </div>
+              
+              <!-- API Key Guide -->
+              <div class="bg-blue-50 rounded-lg border border-blue-100 mt-2 overflow-hidden transition-all">
+                <button 
+                  @click="showApiKeyGuide = !showApiKeyGuide"
+                  class="w-full flex items-center justify-between p-3 text-left hover:bg-blue-100 transition-colors"
+                >
+                  <p class="text-xs font-bold text-blue-700">如何取得 API Key？</p>
+                  <font-awesome-icon 
+                    :icon="showApiKeyGuide ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'" 
+                    class="text-blue-500 text-xs transition-transform"
+                  />
+                </button>
+                
+                <div v-show="showApiKeyGuide" class="px-3 pb-3 pt-0">
+                  <ol class="list-decimal list-inside text-[10px] text-blue-600 space-y-1 border-t border-blue-200 pt-2 mt-1">
+                    <li>前往 <a href="https://aistudio.google.com/app/apikey" target="_blank" class="underline font-bold">Google AI Studio</a></li>
+                    <li>登入您的 Google 帳號</li>
+                    <li>點擊左上角的 "Get API key" 按鈕</li>
+                    <li>點擊 "Create API key"</li>
+                    <li>選擇 "Create API key in new project" (或現有專案)</li>
+                    <li>複製產生的 API Key 並貼上至上方欄位</li>
+                  </ol>
+                </div>
+              </div>
+
+              <label class="block text-xs font-bold text-gray-500 mt-4">模型選擇 (Model)</label>
+              <select 
+                :value="store.settings.aiSettings?.model" 
+                @change="(e) => updateAiSetting('model', (e.target as HTMLSelectElement).value)"
+                class="w-full p-2 rounded-lg bg-gray-50 border border-gray-200 text-sm outline-none focus:border-jp-mustard"
+              >
+                <option value="gemini-3-pro-preview">Gemini 3 Pro Preview (最新最強)</option>
+                <option value="gemini-2.5-pro">Gemini 2.5 Pro (進階思考)</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash (推薦)</option>
+                <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite (最快速)</option>
+              </select>
+
+              <label class="block text-xs font-bold text-gray-500 mt-4">自訂 AI 提示詞 (Custom Prompt)</label>
+              <textarea 
+                :value="store.settings.aiSettings?.customPrompt"
+                @input="(e) => updateAiSetting('customPrompt', (e.target as HTMLTextAreaElement).value)"
+                class="w-full p-3 rounded-lg bg-gray-50 border border-gray-200 text-xs outline-none focus:border-jp-mustard resize-none"
+                rows="3"
+                placeholder="例如：請優先建議地鐵路線，避免公車。導覽內容請多介紹歷史背景。"
+              ></textarea>
+            </div>
+          </div>
 
           <!-- Tab 3: 票券 (Passes) -->
           <div v-if="activeTab === 'passes'" class="space-y-4">
@@ -343,9 +408,11 @@ const store = useTripStore()
 
 // Tab Logic
 const activeTab = ref('trip')
+const showApiKeyGuide = ref(false)
 const tabs = [
   { id: 'trip', name: '行程' },
   { id: 'prefs', name: '偏好' },
+  { id: 'ai', name: 'AI' },
   { id: 'passes', name: '票券' },
   { id: 'system', name: '系統' }
 ]
@@ -543,6 +610,16 @@ const updateRate = (code: string, e: Event) => {
 const updateVoice = (e: Event) => {
   const target = e.target as HTMLSelectElement
   store.updateSettings({ voiceURI: target.value })
+}
+
+const updateAiSetting = (key: 'apiKey' | 'model' | 'customPrompt', value: string) => {
+  const currentAiSettings = store.settings.aiSettings || { apiKey: '', model: 'gemini-1.5-flash' }
+  store.updateSettings({
+    aiSettings: {
+      ...currentAiSettings,
+      [key]: value
+    }
+  })
 }
 
 const previewVoice = () => {

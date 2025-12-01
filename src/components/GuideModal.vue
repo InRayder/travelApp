@@ -1,6 +1,6 @@
 <template>
   <transition name="slide-up">
-    <div v-if="isOpen && guide" class="fixed inset-0 z-[110] flex items-end justify-center pointer-events-none">
+    <div v-if="isOpen && guide" class="fixed inset-0 z-[10001] flex items-end justify-center pointer-events-none">
       <div class="absolute inset-0 bg-black/40 pointer-events-auto transition-opacity backdrop-blur-sm" @click="closeModal"></div>
       <div class="bg-white w-full max-w-md h-[92vh] rounded-t-3xl pointer-events-auto shadow-2xl flex flex-col relative z-[100] overflow-hidden">
         

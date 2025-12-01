@@ -115,6 +115,11 @@ export interface Settings {
     currency: string;   // 預設顯示幣別
     timeFormat?: '12h' | '24h'; // 時間格式 (12h/24h)
     voiceURI?: string; // 語音設定
+    aiSettings?: {
+        apiKey: string;
+        model: string; // 'gemini-1.5-flash' | 'gemini-1.5-pro'
+        customPrompt?: string; // 使用者自訂提示詞 (e.g. "少走路", "優先搭地鐵")
+    };
 }
 
 export interface Category {
@@ -324,7 +329,11 @@ export const useTripStore = defineStore('trip', {
         settings: {
             currency: 'JPY',
             timeFormat: '24h',
-            voiceURI: ''
+            voiceURI: '',
+            aiSettings: {
+                apiKey: '',
+                model: 'gemini-2.5-flash'
+            }
         },
         travelers: ['我'],
         days: [],
@@ -389,6 +398,7 @@ export const useTripStore = defineStore('trip', {
                     // Ensure timeFormat exists if loading old settings
                     if (!this.settings.timeFormat) this.settings.timeFormat = '24h'
                     if (this.settings.voiceURI === undefined) this.settings.voiceURI = ''
+                    if (!this.settings.aiSettings) this.settings.aiSettings = { apiKey: '', model: 'gemini-2.5-flash' }
 
                     this.title = parsed.title || DEFAULT_DATA.title
                     this.startDate = parsed.startDate || DEFAULT_DATA.startDate
@@ -496,7 +506,7 @@ export const useTripStore = defineStore('trip', {
             this.travelers = JSON.parse(JSON.stringify(DEFAULT_DATA.travelers))
             this.passes = []
             this.attractionGuides = JSON.parse(JSON.stringify(DEFAULT_GUIDES))
-            this.settings = { currency: 'JPY', timeFormat: '24h', voiceURI: '' }
+            this.settings = { currency: 'JPY', timeFormat: '24h', voiceURI: '', aiSettings: { apiKey: '', model: 'gemini-2.5-flash' } }
             this.title = DEFAULT_DATA.title || 'Easy Trip'
             this.startDate = DEFAULT_DATA.startDate || '2025-09-10'
             this.currencies = {
@@ -524,7 +534,7 @@ export const useTripStore = defineStore('trip', {
             this.travelers = ['我']
             this.passes = []
             this.attractionGuides = {}
-            this.settings = { currency: 'JPY', timeFormat: '24h', voiceURI: '' } // Updated default settings
+            this.settings = { currency: 'JPY', timeFormat: '24h', voiceURI: '', aiSettings: { apiKey: '', model: 'gemini-2.5-flash' } } // Updated default settings
             this.title = '我的行程'
             this.startDate = new Date().toISOString().split('T')[0]
             this.currencies = {

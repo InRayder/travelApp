@@ -102,12 +102,10 @@
 /* Timeline CSS Logic */
 .timeline-line {
     width: 2px;
-    background-image: linear-gradient(to bottom, #e5e7eb 50%, transparent 50%);
-    background-size: 2px 12px;
-    background-repeat: repeat-y;
+    background-color: #e5e7eb;
 }
 
-.event-item:last-child .timeline-line {
+.event-wrapper:last-child .event-item .timeline-line.lower-line {
     display: none;
 }
 
@@ -160,4 +158,10 @@
 .hide-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+}
+
+/* Disable double-tap zoom */
+html,
+body {
+    touch-action: manipulation;
 }

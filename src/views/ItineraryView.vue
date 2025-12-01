@@ -55,39 +55,63 @@
 
         <!-- 拖曳容器 (Draggable Container) -->
         <div ref="eventsList" class="sortable-list">
-          <div v-for="(item, idx) in currentDay.events" :key="item.id" class="flex group relative event-item" :data-id="idx">
-            <!-- 時間軸欄位 (Timeline Columns) -->
-            <div class="w-16 flex-shrink-0 flex flex-col items-end text-right pr-3 pt-1 transition-opacity duration-200" :class="{ 'opacity-30': isDragging }">
-              <span class="text-sm font-bold text-jp-dark font-mono">{{ formatTime(item.time, store.settings.timeFormat) }}</span>
-              <span v-if="item.endTime" class="text-[10px] text-gray-400 mt-0.5">{{ formatTime(item.endTime, store.settings.timeFormat) }}</span>
-            </div>
-            <div class="w-8 flex-shrink-0 flex flex-col items-center relative timeline-axis timeline-insert-zone">
-              <div class="absolute top-3 bottom-[-1.5rem] timeline-line z-0"></div>
-              <div class="w-3 h-3 bg-white border-2 border-gray-300 rounded-full z-10 relative mt-2 transition-transform duration-200" :class="{ 'scale-125 border-jp-mustard': isDragging }"></div>
-              <div class="absolute -bottom-4 left-1/2 -translate-x-1/2 z-30 timeline-insert-btn opacity-0 transition-all duration-200 transform scale-50">
-                <button @click.stop="openInsertModal(idx)" class="w-8 h-8 rounded-full bg-jp-mustard text-white flex items-center justify-center shadow-lg hover:scale-110" title="在此處插入行程">
-                  <font-awesome-icon icon="fa-solid fa-plus" class="text-xs" />
-                </button>
+          <div v-for="(item, idx) in currentDay.events" :key="item.id" class="flex flex-col relative event-wrapper group" :data-id="idx">
+            
+            <!-- Transport Row -->
+            <div class="flex w-full relative">
+              <!-- Empty Time Column -->
+              <div class="w-16 flex-shrink-0"></div>
+              
+              <!-- Axis Column (Line only) -->
+              <div class="w-8 flex-shrink-0 flex flex-col items-center relative">
+                <!-- Line connecting from previous event -->
+                <div class="absolute top-0 bottom-0 timeline-line z-0" :class="{ 'top-1/2': idx === 0 }"></div>
+              </div>
+              
+              <!-- Content Column (Transport) -->
+              <div class="flex-1 pr-4 min-w-0">
+                <TransportConnector 
+                  :item="item"
+                  :index="idx"
+                  @open-transport="openTransport"
+                  @add-transport="(item: Event, idx: number) => openEditModal(item, idx, true)"
+                />
               </div>
             </div>
-            <!-- 內容欄位 (Content Column) -->
-            <div class="flex-1 pb-4 pr-4 min-w-0">
-                
-              <TransportConnector 
-                :item="item"
-                :index="idx"
-                @open-transport="openTransport"
-                @add-transport="(item: Event, idx: number) => openEditModal(item, idx, true)"
-              />
 
-              <EventCard 
-                :item="item" 
-                :index="idx"
-                @click-edit="openEditModal"
-                @open-guide="openGuide"
-                @open-expense="openExpense"
-                @open-discount="openDiscount"
-              />
+            <!-- Event Row -->
+            <div class="flex relative event-item">
+              <!-- 時間軸欄位 (Timeline Columns) -->
+              <div class="w-16 flex-shrink-0 flex flex-col items-end text-right pr-3 pt-1 transition-opacity duration-200" :class="{ 'opacity-30': isDragging }">
+                <span class="text-sm font-bold text-jp-dark font-mono">{{ formatTime(item.time, store.settings.timeFormat) }}</span>
+                <span v-if="item.endTime" class="text-[10px] text-gray-400 mt-0.5">{{ formatTime(item.endTime, store.settings.timeFormat) }}</span>
+              </div>
+              
+              <div class="w-8 flex-shrink-0 flex flex-col items-center relative timeline-axis timeline-insert-zone">
+                <!-- Upper Line (Connects to Transport Row) -->
+                <div class="absolute top-0 h-3 timeline-line z-0"></div>
+                <!-- Lower Line (Connects to next event) -->
+                <div class="absolute top-3 bottom-[-1.5rem] timeline-line lower-line z-0"></div>
+                
+                <div class="w-3 h-3 bg-white border-2 border-gray-300 rounded-full z-10 relative mt-2 transition-transform duration-200" :class="{ 'scale-125 border-jp-mustard': isDragging }"></div>
+                <div class="absolute -bottom-4 left-1/2 -translate-x-1/2 z-30 timeline-insert-btn opacity-0 transition-all duration-200 transform scale-50">
+                  <button @click.stop="openInsertModal(idx)" class="w-8 h-8 rounded-full bg-jp-mustard text-white flex items-center justify-center shadow-lg hover:scale-110" title="在此處插入行程">
+                    <font-awesome-icon icon="fa-solid fa-plus" class="text-xs" />
+                  </button>
+                </div>
+              </div>
+              
+              <!-- 內容欄位 (Content Column) -->
+              <div class="flex-1 pb-4 pr-4 min-w-0">
+                <EventCard 
+                  :item="item" 
+                  :index="idx"
+                  @click-edit="openEditModal"
+                  @open-guide="openGuide"
+                  @open-expense="openExpense"
+                  @open-discount="openDiscount"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -176,6 +200,9 @@
                       <div class="text-[9px] text-gray-400 truncate">{{ backup.location }}</div>
                     </div>
                     <div class="flex gap-1 shrink-0">
+                      <button @click.stop="editBackup(backup, bIdx)" class="w-6 h-6 rounded bg-white border border-gray-200 text-gray-400 flex items-center justify-center hover:bg-jp-dark hover:text-white transition-colors" title="編輯備案">
+                        <font-awesome-icon icon="fa-solid fa-pen" class="text-[10px]" />
+                      </button>
                       <button @click.stop="promoteBackup(bIdx)" class="w-6 h-6 rounded bg-white border border-gray-200 text-jp-mustard flex items-center justify-center hover:bg-jp-mustard hover:text-white transition-colors" title="加入行程">
                         <font-awesome-icon icon="fa-solid fa-arrow-up" class="text-[10px]" />
                       </button>
@@ -200,6 +227,7 @@
       :isBackup="isAddingBackup"
       :isAdding="isAdding"
       :scrollToTransport="scrollToTransport"
+      :dayIndex="currentDayIndex"
       @close="closeEditModal"
       @save="saveEdit"
       @delete="deleteEvent"
@@ -258,6 +286,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useTripStore } from '../stores/trip.ts'
 import { formatTime, addMinutes, diffMinutes, parseTime, stringifyTime } from '../utils/time.ts'
+// @ts-ignore
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -566,7 +595,7 @@ const selectDay = (index: number) => {
   })
 }
 
-const handleScroll = (e: UIEvent) => {
+const handleScroll = (e: any) => {
   const target = e.target as HTMLElement
   if (target.scrollTop > 50) {
     if (!store.headerCollapsed) store.setHeaderCollapsed(true)
@@ -724,19 +753,32 @@ const saveEdit = (data: Event) => {
  * 刪除行程
  */
 const deleteEvent = () => {
-  openConfirmModal('刪除行程', '確定要刪除此行程嗎？', () => {
+  const title = isAddingBackup.value ? '刪除備案' : '刪除行程'
+  const msg = isAddingBackup.value ? '確定要刪除此備案嗎？' : '確定要刪除此行程嗎？'
+
+  openConfirmModal(title, msg, () => {
     editModalOpen.value = false
-    // Use object reference to find index, more robust than editingIndex
-    if (editingItem.value) {
-      const events = currentDay.value.events
-      const idx = events.indexOf(editingItem.value)
-      if (idx !== -1) {
-        events.splice(idx, 1)
+    
+    if (isAddingBackup.value) {
+      // Delete from backups
+      if (editingIndex.value !== -1) {
+        store.backups.splice(editingIndex.value, 1)
         store.saveData()
-      } else if (editingIndex.value !== -1) {
-        // Fallback to index if object not found (e.g. if cloned)
-        events.splice(editingIndex.value, 1)
-        store.saveData()
+      }
+    } else {
+      // Delete from events
+      // Use object reference to find index, more robust than editingIndex
+      if (editingItem.value) {
+        const events = currentDay.value.events
+        const idx = events.indexOf(editingItem.value)
+        if (idx !== -1) {
+          events.splice(idx, 1)
+          store.saveData()
+        } else if (editingIndex.value !== -1) {
+          // Fallback to index if object not found (e.g. if cloned)
+          events.splice(editingIndex.value, 1)
+          store.saveData()
+        }
       }
     }
   })
@@ -772,6 +814,14 @@ const promoteBackup = (idx: number) => {
   editingIndex.value = -1 // Treating as new event for the day
   isAddingBackup.value = false
   isAdding.value = true
+  editModalOpen.value = true
+}
+
+const editBackup = (item: Event, idx: number) => {
+  editingItem.value = item
+  editingIndex.value = idx
+  isAddingBackup.value = true
+  isAdding.value = false
   editModalOpen.value = true
 }
 

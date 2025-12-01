@@ -1,8 +1,12 @@
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+
 export interface ConversationPhrase {
     id: string
     chinese: string
     japanese: string
     romaji?: string
+    isFavorite?: boolean
 }
 
 export interface ConversationCategory {
@@ -12,7 +16,8 @@ export interface ConversationCategory {
     phrases: ConversationPhrase[]
 }
 
-export const conversationCategories: ConversationCategory[] = [
+const DEFAULT_CATEGORIES: ConversationCategory[] = [
+    // ... (keep existing default categories) ...
     {
         id: 'dining',
         name: '用餐',
@@ -90,3 +95,129 @@ export const conversationCategories: ConversationCategory[] = [
         ]
     }
 ]
+
+export const useConversationStore = defineStore('conversations', () => {
+    const customPhrases = ref<ConversationPhrase[]>([])
+    const favoriteIds = ref<string[]>([])
+
+    // Computed categories to include Favorites and Custom
+    const categories = computed(() => {
+        const allCategories = [...DEFAULT_CATEGORIES]
+
+        // 1. Add Custom Category
+        const customCategory: ConversationCategory = {
+            id: 'custom',
+            name: '我的對話',
+            icon: 'fa-pen-to-square',
+            phrases: customPhrases.value.map(p => ({
+                ...p,
+                isFavorite: favoriteIds.value.includes(p.id)
+            }))
+        }
+        allCategories.push(customCategory)
+
+        // 2. Add Favorites Category (if any)
+        if (favoriteIds.value.length > 0) {
+            const favoritePhrases: ConversationPhrase[] = []
+
+            // Collect from default categories
+            DEFAULT_CATEGORIES.forEach(cat => {
+                cat.phrases.forEach(p => {
+                    if (favoriteIds.value.includes(p.id)) {
+                        favoritePhrases.push({ ...p, isFavorite: true })
+                    }
+                })
+            })
+
+            // Collect from custom phrases
+            customPhrases.value.forEach(p => {
+                if (favoriteIds.value.includes(p.id)) {
+                    // Avoid duplicates if already added (though IDs should be unique)
+                    if (!favoritePhrases.find(fp => fp.id === p.id)) {
+                        favoritePhrases.push({ ...p, isFavorite: true })
+                    }
+                }
+            })
+
+            const favoritesCategory: ConversationCategory = {
+                id: 'favorites',
+                name: '常用收藏',
+                icon: 'fa-star',
+                phrases: favoritePhrases
+            }
+
+            // Insert Favorites at the beginning
+            allCategories.unshift(favoritesCategory)
+        }
+
+        // 3. Map isFavorite to all phrases in other categories
+        return allCategories.map(cat => {
+            if (cat.id === 'favorites') return cat
+            return {
+                ...cat,
+                phrases: cat.phrases.map(p => ({
+                    ...p,
+                    isFavorite: favoriteIds.value.includes(p.id)
+                }))
+            }
+        })
+    })
+
+    const toggleFavorite = (phraseId: string) => {
+        const index = favoriteIds.value.indexOf(phraseId)
+        if (index === -1) {
+            favoriteIds.value.push(phraseId)
+        } else {
+            favoriteIds.value.splice(index, 1)
+        }
+    }
+
+    const addCustomPhrase = (phrase: Omit<ConversationPhrase, 'id'>) => {
+        customPhrases.value.push({
+            id: crypto.randomUUID(),
+            ...phrase
+        })
+    }
+
+    const deleteCustomPhrase = (phraseId: string) => {
+        const index = customPhrases.value.findIndex(p => p.id === phraseId)
+        if (index !== -1) {
+            customPhrases.value.splice(index, 1)
+        }
+        // Also remove from favorites if present
+        const favIndex = favoriteIds.value.indexOf(phraseId)
+        if (favIndex !== -1) {
+            favoriteIds.value.splice(favIndex, 1)
+        }
+    }
+
+    const updateCustomPhrase = (id: string, phrase: Omit<ConversationPhrase, 'id'>) => {
+        const index = customPhrases.value.findIndex(p => p.id === id)
+        if (index !== -1) {
+            customPhrases.value[index] = {
+                ...customPhrases.value[index],
+                ...phrase
+            }
+        }
+    }
+
+    // Deprecated: addPhrase (kept for compatibility if needed, but mapped to addCustomPhrase)
+    const addPhrase = (categoryId: string, phrase: Omit<ConversationPhrase, 'id'>) => {
+        if (categoryId === 'custom') {
+            addCustomPhrase(phrase)
+        }
+    }
+
+    return {
+        categories,
+        customPhrases,
+        favoriteIds,
+        toggleFavorite,
+        addCustomPhrase,
+        updateCustomPhrase,
+        deleteCustomPhrase,
+        addPhrase
+    }
+}, {
+    persist: true
+})

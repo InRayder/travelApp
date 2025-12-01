@@ -47,8 +47,28 @@
               </p>
             </div>
 
-            <!-- Slide 3: Sample Data -->
+            <!-- Slide 3: AI Assistant -->
             <div v-if="currentSlide === 2" key="2" class="absolute inset-0 p-8 flex flex-col items-center justify-center text-center space-y-6">
+              <div class="w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center text-4xl text-purple-600 mb-2 animate-pulse">
+                <font-awesome-icon icon="fa-solid fa-wand-magic-sparkles" />
+              </div>
+              <h3 class="text-xl font-bold text-jp-dark">AI 智慧助手</h3>
+              <p class="text-gray-600 text-sm leading-relaxed px-4">
+                您的全能旅遊夥伴！<br>
+                除了<span class="font-bold text-purple-600">翻譯與對話</span>，還能協助<br>
+                <span class="font-bold text-purple-600">生成攻略</span>、<span class="font-bold text-purple-600">推薦交通</span>與<span class="font-bold text-purple-600">討論行程</span>。
+              </p>
+              <div class="bg-purple-50 p-4 rounded-xl text-xs text-left w-full space-y-2 border border-purple-100">
+                <p><font-awesome-icon icon="fa-solid fa-map-location-dot" class="text-green-500 mr-2" />攻略生成、交通推薦、行程討論</p>
+                <p><font-awesome-icon icon="fa-solid fa-language" class="text-blue-500 mr-2" />極速翻譯、情境模擬、語音朗讀</p>
+                <p class="pt-2 border-t border-purple-200 text-purple-600 font-bold">
+                  <font-awesome-icon icon="fa-solid fa-key" class="mr-2" />需於設定中輸入 API Key 才能使用 AI 功能
+                </p>
+              </div>
+            </div>
+
+            <!-- Slide 4: Sample Data -->
+            <div v-if="currentSlide === 3" key="3" class="absolute inset-0 p-8 flex flex-col items-center justify-center text-center space-y-6">
               <div class="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center text-4xl text-yellow-600 mb-2">
                 <font-awesome-icon icon="fa-solid fa-file-pen" />
               </div>
@@ -70,7 +90,7 @@
           <!-- Dots -->
           <div class="flex gap-2">
             <div 
-              v-for="i in 3" 
+              v-for="i in 4" 
               :key="i"
               class="w-2 h-2 rounded-full transition-all duration-300"
               :class="currentSlide === i - 1 ? 'bg-jp-dark w-6' : 'bg-gray-300'"
@@ -88,7 +108,7 @@
             </button>
             
             <button 
-              v-if="currentSlide < 2"
+              v-if="currentSlide < 3"
               @click="nextSlide"
               class="px-6 py-2 bg-jp-dark text-white rounded-xl font-bold text-sm hover:bg-gray-800 transition-all shadow-lg shadow-gray-200"
             >
@@ -122,7 +142,7 @@ const emit = defineEmits(['close'])
 const currentSlide = ref(0)
 
 const nextSlide = () => {
-  if (currentSlide.value < 2) {
+  if (currentSlide.value < 3) {
     currentSlide.value++
   }
 }

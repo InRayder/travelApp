@@ -1,9 +1,22 @@
 # 更新日誌 (Changelog)
 
+## [0.1.2] - 2025-12-02
+
+### 主要功能 (Major Features)
+- **AI 智慧助手 (AI Assistant)**: 全新 AI 助手登場！不僅支援極速翻譯與情境模擬對話，更能協助生成旅遊攻略、推薦交通方式，甚至與您討論行程安排，是您日本之旅的全能夥伴。
+- **實用日語對話 (Practical Japanese Conversation)**: 整合了自訂對話編輯、語音朗讀 (TTS) 及極速翻譯功能，打造更實用的溝通工具。
+
+### 其他新增 (Other Additions)
+- **極速翻譯 (Fast Translation)**: 翻譯功能自動切換至 `Gemini 2.5 Flash-Lite` 模型，回應更迅速。
+- **Google 翻譯備援 (Google Translate Fallback)**: 若未設定 API Key，自動開啟 Google 翻譯網頁作為備援。
+- **介面優化 (UI Improvements)**: 根據 API Key 設定狀態自動調整介面顯示。
+
+### 修正項目 (Fixed)
+- **Pinia 持久化 (Pinia Persistence)**: 修正了 `conversations` store 中因缺少 `pinia-plugin-persistedstate` 導致的 TypeScript 錯誤，確保資料能正確儲存。
+
 ## [0.1.1] - 2025-12-01
 
 ### 新增功能 (Added)
-- **互動式導覽 (Interactive Tour)**: 新增「聚光燈」效果的新手引導，依序介紹設定、行程、記帳與對話功能。
 - **設定頁面優化 (Settings)**: 重構設定視窗為分頁式設計 (行程、偏好、票券、系統)，提升操作體驗。
 - **語音選擇 (Voice Selection)**: 在日語對話功能中新增語音選擇與試聽功能，支援瀏覽器提供的多種日語語音。
 - **效能監控 (Speed Insights)**: 整合 Vercel Speed Insights 以監控應用程式效能。

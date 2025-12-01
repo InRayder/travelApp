@@ -5,7 +5,7 @@
       <div class="bg-white w-full max-w-md rounded-t-3xl p-6 pointer-events-auto shadow-2xl modal-body flex flex-col relative z-50">
         
         <div class="flex justify-between items-center mb-4 shrink-0">
-          <h3 class="font-bold text-lg">{{ isBackup ? '新增備案' : (isAdding ? '新增行程' : '編輯行程') }}</h3>
+          <h3 class="font-bold text-lg">{{ isBackup ? (isAdding ? '新增備案' : '編輯備案') : (isAdding ? '新增行程' : '編輯行程') }}</h3>
           <div class="flex gap-2">
             <button v-if="!isBackup && !isAdding" @click="emit('move-to-backup')" class="text-gray-400 hover:text-orange-500" title="移至備案">
               <font-awesome-icon icon="fa-solid fa-arrow-down-long" />
@@ -40,22 +40,39 @@
           <!-- 關聯導覽 (Linked Guide) -->
           <div>
             <label class="text-xs font-bold text-gray-500 block mb-1">關聯深度導覽 (Guide Link)</label>
-            <select v-model="form.linkedGuide" class="w-full bg-gray-50 p-3 rounded-xl outline-none focus:ring-2 focus:ring-jp-mustard transition-all text-sm">
-              <option :value="null">-- 自動偵測 (Auto) --</option>
-              <option v-for="(_, k) in store.attractionGuides" :key="k" :value="k">{{ k }}</option>
-            </select>
+            <div class="flex gap-2">
+              <select v-model="form.linkedGuide" class="flex-1 bg-gray-50 p-3 rounded-xl outline-none focus:ring-2 focus:ring-jp-mustard transition-all text-sm">
+                <option :value="undefined">-- 自動偵測 (Auto) --</option>
+                <option v-for="(_, k) in store.attractionGuides" :key="k" :value="k">{{ k }}</option>
+              </select>
+              <button 
+                v-if="store.settings.aiSettings?.apiKey"
+                @click="generateGuide" 
+                :disabled="isGuideGenerating || !form.title"
+                class="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-3 rounded-xl text-xs font-bold hover:shadow-md transition-all flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="AI 自動生成深度導覽"
+              >
+                <font-awesome-icon icon="fa-solid fa-wand-magic-sparkles" />
+                <span v-if="isGuideGenerating">生成中...</span>
+                <span v-else>AI 生成</span>
+              </button>
+            </div>
           </div>
 
           <!-- 時間 (Time) -->
           <div v-if="!isBackup" class="bg-gray-50 p-3 rounded-xl border border-gray-100 space-y-3">
             <div>
               <label class="text-xs font-bold text-gray-500 block mb-1">預計抵達時間 <span class="text-red-400">*</span></label>
-              <TimeInput v-model="form.time" :format="store.settings.timeFormat" @change="onTimeChange" />
+              <div :lang="store.settings.timeFormat === '24h' ? 'en-GB' : 'en-US'" :key="store.settings.timeFormat">
+                <input type="time" v-model="form.time" @change="onTimeChange" class="w-full bg-white p-2 rounded-lg outline-none border border-gray-200 text-xs font-mono font-bold text-center focus:border-jp-accent-blue" />
+              </div>
             </div>
             <div class="flex gap-2">
               <div class="flex-1">
                 <label class="text-xs font-bold text-gray-500 block mb-1">預計離開時間</label>
-                <TimeInput v-model="form.endTime" :format="store.settings.timeFormat" @change="onEndTimeChange" />
+                <div :lang="store.settings.timeFormat === '24h' ? 'en-GB' : 'en-US'" :key="store.settings.timeFormat">
+                  <input type="time" v-model="form.endTime" @change="onEndTimeChange" class="w-full bg-white p-2 rounded-lg outline-none border border-gray-200 text-xs font-mono font-bold text-center focus:border-jp-accent-blue" />
+                </div>
               </div>
               <div class="flex items-center pt-4 text-gray-400 text-xs">OR</div>
               <div class="flex-1">
@@ -75,8 +92,18 @@
                 <div class="flex-1"><label class="text-[10px] text-gray-500 block mb-1">退房日期</label><input v-model="form.stayInfo.endDate" type="date" class="w-full bg-white p-2 rounded-lg outline-none text-xs font-mono"></div>
               </div>
               <div class="flex gap-2">
-                <div class="flex-1"><label class="text-[10px] text-gray-500 block mb-1">Check-in</label><TimeInput v-model="form.stayInfo.checkIn" :format="store.settings.timeFormat" /></div>
-                <div class="flex-1"><label class="text-[10px] text-gray-500 block mb-1">Check-out</label><TimeInput v-model="form.stayInfo.checkOut" :format="store.settings.timeFormat" /></div>
+                <div class="flex-1">
+                  <label class="text-[10px] text-gray-500 block mb-1">Check-in</label>
+                  <div :lang="store.settings.timeFormat === '24h' ? 'en-GB' : 'en-US'" :key="store.settings.timeFormat">
+                    <input type="time" v-model="form.stayInfo.checkIn" class="w-full bg-white p-2 rounded-lg outline-none border border-gray-200 text-xs font-mono font-bold text-center focus:border-jp-accent-blue" />
+                  </div>
+                </div>
+                <div class="flex-1">
+                  <label class="text-[10px] text-gray-500 block mb-1">Check-out</label>
+                  <div :lang="store.settings.timeFormat === '24h' ? 'en-GB' : 'en-US'" :key="store.settings.timeFormat">
+                    <input type="time" v-model="form.stayInfo.checkOut" class="w-full bg-white p-2 rounded-lg outline-none border border-gray-200 text-xs font-mono font-bold text-center focus:border-jp-accent-blue" />
+                  </div>
+                </div>
               </div>
               <div><label class="text-[10px] text-gray-500 block mb-1">備註</label><textarea v-model="form.stayInfo.notes" rows="2" class="w-full bg-white p-2 rounded-lg outline-none text-xs resize-none" placeholder="房號/密碼/注意事項"></textarea></div>
             </div>
@@ -111,10 +138,23 @@
           <div v-if="!isBackup" class="space-y-4" ref="transportSection">
             <div v-for="(t, index) in form.transports" :key="index" class="border border-jp-accent-blue/30 bg-blue-50/50 p-4 rounded-xl space-y-3 relative">
               <div class="flex justify-between items-center mb-2">
-                <label class="text-xs font-bold text-jp-accent-blue flex items-center gap-1">
-                  <font-awesome-icon icon="fa-solid fa-route" /> 
-                  交通方式 {{ form.transports && form.transports.length > 1 ? `#${index + 1}` : '' }}
-                </label>
+                <div class="flex items-center gap-2">
+                  <label class="text-xs font-bold text-jp-accent-blue flex items-center gap-1">
+                    <font-awesome-icon icon="fa-solid fa-route" /> 
+                    交通方式 {{ form.transports && form.transports.length > 1 ? `#${index + 1}` : '' }}
+                  </label>
+                  <button 
+                    v-if="store.settings.aiSettings?.apiKey"
+                    @click="suggestTransport(index)" 
+                    :disabled="isAiLoading"
+                    class="text-[10px] bg-gradient-to-r from-purple-500 to-blue-500 text-white px-2 py-0.5 rounded-full hover:shadow-md transition-all flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <font-awesome-icon icon="fa-solid fa-wand-magic-sparkles" />
+                    <span>AI 推薦</span>
+                  </button>
+
+
+                </div>
                 <button @click="removeTransportSegment(index)" class="text-gray-400 hover:text-red-500 text-xs px-2">
                   <font-awesome-icon icon="fa-solid fa-trash" />
                 </button>
@@ -131,6 +171,20 @@
                   <option value="drive">自駕 (Self-drive)</option>
                   <option value="ferry">船 (Ferry)</option>
                 </select>
+              </div>
+
+              <!-- AI Reasoning Alert -->
+              <div v-if="aiReasoning && aiReasoning.index === index" class="bg-blue-50 border border-blue-200 rounded-lg p-3 relative mt-2">
+                <button @click="aiReasoning = null" class="absolute right-2 top-2 text-blue-400 hover:text-blue-600">
+                  <font-awesome-icon icon="fa-solid fa-times" class="text-xs" />
+                </button>
+                <div class="flex gap-2">
+                  <font-awesome-icon icon="fa-solid fa-robot" class="text-blue-500 mt-0.5" />
+                  <div>
+                    <p class="text-[10px] font-bold text-blue-600 mb-1">AI 推薦原因</p>
+                    <p class="text-xs text-blue-800 leading-relaxed">{{ aiReasoning.text }}</p>
+                  </div>
+                </div>
               </div>
 
               <!-- Walk: Simple View -->
@@ -239,12 +293,14 @@
                 <div class="grid grid-cols-3 gap-2">
                   <div v-if="t.type !== 'taxi'">
                     <label class="block text-[10px] font-bold text-gray-500 mb-1">出發 (Dep)</label>
-                    <TimeInput 
-                      v-model="t.dep" 
-                      :format="store.settings.timeFormat" 
-                      class="w-full" 
-                      @change="updateArr(t)"
-                    />
+                    <div :lang="store.settings.timeFormat === '24h' ? 'en-GB' : 'en-US'" :key="store.settings.timeFormat">
+                      <input 
+                        type="time"
+                        v-model="t.dep" 
+                        class="w-full bg-white p-2 rounded-lg outline-none border border-gray-200 text-xs font-mono font-bold text-center focus:border-jp-accent-blue" 
+                        @change="updateArr(t)"
+                      />
+                    </div>
                   </div>
                   <div :class="{'col-span-3': t.type === 'taxi'}">
                     <label class="block text-[10px] font-bold text-gray-500 mb-1">時長 (Min)</label>
@@ -258,12 +314,14 @@
                   </div>
                   <div v-if="t.type !== 'taxi'">
                     <label class="block text-[10px] font-bold text-gray-500 mb-1">抵達 (Arr)</label>
-                    <TimeInput 
-                      v-model="t.arr" 
-                      :format="store.settings.timeFormat" 
-                      class="w-full" 
-                      @change="updateDuration(t)"
-                    />
+                    <div :lang="store.settings.timeFormat === '24h' ? 'en-GB' : 'en-US'" :key="store.settings.timeFormat">
+                      <input 
+                        type="time"
+                        v-model="t.arr" 
+                        class="w-full bg-white p-2 rounded-lg outline-none border border-gray-200 text-xs font-mono font-bold text-center focus:border-jp-accent-blue" 
+                        @change="updateDuration(t)"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -299,10 +357,14 @@
                 <div v-if="t.schedules && t.schedules.length > 0" class="space-y-2">
                   <div v-for="(sch, idx) in t.schedules" :key="idx" class="flex gap-2 items-center bg-white/50 p-2 rounded-lg">
                     <div class="w-20">
-                      <TimeInput v-model="sch.dep" :format="store.settings.timeFormat" placeholder="Dep" />
+                      <div :lang="store.settings.timeFormat === '24h' ? 'en-GB' : 'en-US'" :key="store.settings.timeFormat">
+                        <input type="time" v-model="sch.dep" class="w-full bg-white p-1 rounded text-xs outline-none border border-gray-200 font-mono text-center" placeholder="Dep" />
+                      </div>
                     </div>
                     <div class="w-20">
-                      <TimeInput v-model="sch.arr" :format="store.settings.timeFormat" placeholder="Arr" />
+                      <div :lang="store.settings.timeFormat === '24h' ? 'en-GB' : 'en-US'" :key="store.settings.timeFormat">
+                        <input type="time" v-model="sch.arr" class="w-full bg-white p-1 rounded text-xs outline-none border border-gray-200 font-mono text-center" placeholder="Arr" />
+                      </div>
                     </div>
                     <div class="flex-1">
                       <input v-model="sch.note" class="w-full bg-white p-1 rounded text-xs outline-none border border-gray-200" placeholder="備註">
@@ -385,14 +447,30 @@
       </div>
     </div>
   </transition>
+  <!-- Loading Animation -->
+  <LoadingAnimation 
+    :show="isGuideGenerating || isAiLoading" 
+    :message="loadingMessage"
+  />
+
+  <!-- Guide Review Modal -->
+  <GuideModal 
+    :is-open="showGuideReview"
+    :guide="generatedGuideData"
+    :initial-edit-mode="true"
+    @close="showGuideReview = false"
+    @save="handleGuideSave"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, watch, toRaw, nextTick, computed } from 'vue'
 import { useTripStore } from '../stores/trip.ts'
 import type { Event as TripEvent, Transport } from '../stores/trip.ts'
-import TimeInput from './TimeInput.vue'
 import { diffMinutes, addMinutes } from '../utils/time.ts'
+import { GoogleGenerativeAI } from '@google/generative-ai'
+import LoadingAnimation from './LoadingAnimation.vue'
+import GuideModal from './GuideModal.vue'
 
 const props = defineProps<{
   isOpen: boolean
@@ -400,11 +478,24 @@ const props = defineProps<{
   isBackup: boolean
   isAdding: boolean
   scrollToTransport?: boolean
+  dayIndex: number
 }>()
 
 const emit = defineEmits(['close', 'save', 'delete', 'move-to-backup'])
 
 const store = useTripStore()
+const isAiLoading = ref(false)
+const isGuideGenerating = ref(false)
+const aiReasoning = ref<{ index: number, text: string } | null>(null)
+
+const showGuideReview = ref(false)
+const generatedGuideData = ref<{ title: string, data: any } | null>(null)
+
+const loadingMessage = computed(() => {
+  if (isGuideGenerating.value) return 'AI 正在為您規劃深度導覽...'
+  if (isAiLoading.value) return 'AI 正在分析最佳交通方案...'
+  return ''
+})
 
 // Initialize form with default values matching the Event interface
 const form = ref<TripEvent>({
@@ -490,6 +581,260 @@ watch(() => props.isOpen, (newVal) => {
     }
   }
 })
+
+const generateGuide = async () => {
+  if (!store.settings.aiSettings?.apiKey) {
+    alert('請先在設定中輸入 Google AI Studio API Key')
+    return
+  }
+
+  if (!form.value.title) {
+    alert('請先輸入「標題」才能進行 AI 導覽生成')
+    return
+  }
+
+  isGuideGenerating.value = true
+  try {
+    const genAI = new GoogleGenerativeAI(store.settings.aiSettings.apiKey)
+    const model = genAI.getGenerativeModel({ model: store.settings.aiSettings.model || 'gemini-1.5-flash' })
+
+    const customPrompt = store.settings.aiSettings.customPrompt ? `\nUser preferences: ${store.settings.aiSettings.customPrompt}` : ''
+
+    const prompt = `
+      Generate a travel guide for "${form.value.title}" ${form.value.location ? `located at "${form.value.location}"` : ''}.${customPrompt}
+      
+      Output ONLY a JSON object with this schema:
+      {
+        "desc": "Detailed description (approx 100 words) in Traditional Chinese",
+        "tags": ["Tag1", "Tag2", "Tag3"] (3-5 short tags in Traditional Chinese),
+        "highlights": ["Highlight1", "Highlight2", "Highlight3"] (3-5 bullet points in Traditional Chinese),
+        "tips": "Practical tips for visiting (in Traditional Chinese)",
+        "link": "Official website or relevant URL (if available, otherwise empty string)",
+        "color": "Tailwind CSS gradient class (e.g. 'from-pink-500 to-red-600')",
+        "icon": "FontAwesome class (e.g. 'fa-solid fa-torii-gate')"
+      }
+    `
+
+    const result = await model.generateContent(prompt)
+    const response = result.response.text()
+    const jsonMatch = response.match(/\{[\s\S]*\}/)
+    
+    if (jsonMatch) {
+      const data = JSON.parse(jsonMatch[0])
+      
+      // Prepare data for review
+      generatedGuideData.value = {
+        title: form.value.title,
+        data: {
+          color: data.color || 'from-blue-500 to-cyan-500',
+          icon: data.icon || 'fa-solid fa-map-pin',
+          desc: data.desc,
+          tags: data.tags || [],
+          highlights: data.highlights || [],
+          tips: data.tips || '',
+          link: data.link || '',
+          image: undefined
+        }
+      }
+      
+      // Open review modal
+      showGuideReview.value = true
+    }
+  } catch (e) {
+    console.error('AI Guide Generation Error:', e)
+    alert('AI 生成失敗，請稍後再試。')
+  } finally {
+    isGuideGenerating.value = false
+  }
+}
+
+const handleGuideSave = (title: string, data: any) => {
+  const guideId = title || `guide_${Date.now()}`
+  
+  const newGuide: any = {
+    id: guideId,
+    title: title,
+    ...data
+  }
+
+  // Add to store
+  if (!store.attractionGuides) {
+    store.attractionGuides = {}
+  }
+  store.attractionGuides[guideId] = newGuide
+  
+  // Link to current event
+  form.value.linkedGuide = guideId
+  
+  // Close review modal
+  showGuideReview.value = false
+  generatedGuideData.value = null
+}
+
+const suggestTransport = async (transportIndex: number) => {
+  const apiKey = store.settings.aiSettings?.apiKey
+  if (!apiKey) {
+    alert('請先在設定中輸入 Google AI Studio API Key')
+    return
+  }
+
+  const toLocation = form.value.location
+  const toTime = form.value.time
+
+  if (!toLocation) {
+    alert('請先輸入「地點」才能進行 AI 推薦')
+    return
+  }
+
+  // Find previous location
+  let fromLocation = ''
+  let fromTime = ''
+  
+  const currentDayEvents = store.days[props.dayIndex].events
+
+  if (props.isAdding) {
+    if (currentDayEvents.length > 0) {
+      const prevEvent = currentDayEvents[currentDayEvents.length - 1]
+      fromLocation = prevEvent.location
+      fromTime = prevEvent.endTime || prevEvent.time
+    } else if (props.dayIndex > 0) {
+      const prevDayEvents = store.days[props.dayIndex - 1].events
+      if (prevDayEvents.length > 0) {
+        const prevEvent = prevDayEvents[prevDayEvents.length - 1]
+        fromLocation = prevEvent.location
+        fromTime = prevEvent.endTime || prevEvent.time
+      }
+    }
+  } else {
+    const currentIndex = currentDayEvents.findIndex(e => e.id === props.initialData?.id)
+    if (currentIndex > 0) {
+      const prevEvent = currentDayEvents[currentIndex - 1]
+      fromLocation = prevEvent.location
+      fromTime = prevEvent.endTime || prevEvent.time
+    } else if (props.dayIndex > 0) {
+      const prevDayEvents = store.days[props.dayIndex - 1].events
+      if (prevDayEvents.length > 0) {
+        const prevEvent = prevDayEvents[prevDayEvents.length - 1]
+        fromLocation = prevEvent.location
+        fromTime = prevEvent.endTime || prevEvent.time
+      }
+    }
+  }
+
+  if (!fromLocation) {
+    alert('找不到上一個行程地點，無法計算交通方式。')
+    return
+  }
+
+  isAiLoading.value = true
+  // Clear existing reasoning
+  aiReasoning.value = null
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey)
+    const model = genAI.getGenerativeModel({ model: store.settings.aiSettings?.model || 'gemini-1.5-flash' })
+
+    const customPrompt = store.settings.aiSettings?.customPrompt ? `\nUser preferences: ${store.settings.aiSettings.customPrompt}` : ''
+
+    const prompt = `
+      Suggest the best transport method from "${fromLocation}" (${fromTime}) to "${toLocation}" (${toTime}) in Japan.${customPrompt}
+      If transfers are needed, provide multiple segments.
+      
+      Output ONLY a JSON object with this schema:
+      {
+        "segments": [
+          {
+            "type": "walk" | "public" | "express" | "ferry" | "taxi" | "drive" | "flight",
+            "duration": number (minutes),
+            "cost": number (yen),
+            "line": "Line name (if public)",
+            "trainNumber": "Train name (if express)",
+            "company": "Company name (if applicable)",
+            "direction": "Direction (e.g. Towards Shinjuku)",
+            "note": "Boarding/Alighting info or other details",
+            "dep": "HH:MM",
+            "arr": "HH:MM"
+          }
+        ],
+        "reasoning": "Brief explanation of why this is the best option (in Traditional Chinese)"
+      }
+    `
+
+    const result = await model.generateContent(prompt)
+    const response = result.response.text()
+    console.log('AI Transport Response:', response) // Debug log
+    const jsonMatch = response.match(/\{[\s\S]*\}/)
+    
+    if (jsonMatch) {
+      const data = JSON.parse(jsonMatch[0])
+      console.log('Parsed AI Data:', data) // Debug log
+      
+      if (data.segments && Array.isArray(data.segments) && data.segments.length > 0) {
+        const newSegments = data.segments.map((seg: any) => {
+           // Auto calculate missing time if duration is provided
+           let arr = seg.arr
+           if (seg.dep && seg.duration && !arr) {
+             const [h, m] = seg.dep.split(':').map(Number)
+             const totalMin = h * 60 + m + seg.duration
+             const newH = Math.floor(totalMin / 60) % 24
+             const newM = totalMin % 60
+             arr = `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`
+           }
+
+           return {
+             type: seg.type,
+             duration: seg.duration,
+             cost: seg.cost,
+             line: seg.line || '',
+             trainNumber: seg.trainNumber || '',
+             company: seg.company || '',
+             direction: seg.direction || '',
+             note: seg.note || '',
+             dep: seg.dep || '',
+             arr: arr || '',
+             passId: undefined
+           }
+        })
+
+        // Replace the current segment and insert subsequent segments
+        if (form.value.transports) {
+             form.value.transports.splice(transportIndex, 1, ...newSegments)
+        }
+      } else if (data.type) {
+        // Fallback for single segment response
+        const t = form.value.transports![transportIndex]
+        t.type = data.type
+        t.duration = data.duration
+        t.cost = data.cost
+        if (data.line) t.line = data.line
+        if (data.trainNumber) t.trainNumber = data.trainNumber
+        if (data.company) t.company = data.company
+        if (data.direction) t.direction = data.direction
+        if (data.note) t.note = data.note
+        if (data.dep) t.dep = data.dep
+        if (data.arr) t.arr = data.arr
+        
+        // Auto calculate missing time if duration is provided
+        if (t.dep && t.duration && !t.arr) {
+          const [h, m] = t.dep.split(':').map(Number)
+          const totalMin = h * 60 + m + t.duration
+          const newH = Math.floor(totalMin / 60) % 24
+          const newM = totalMin % 60
+          t.arr = `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`
+        }
+      }
+      
+      if (data.reasoning) {
+        aiReasoning.value = { index: transportIndex, text: data.reasoning }
+      }
+    }
+  } catch (e) {
+    console.error('AI Suggestion Error:', e)
+    alert('AI 建議失敗，請稍後再試。')
+  } finally {
+    isAiLoading.value = false
+  }
+}
 
 // 時間計算邏輯 (Time Calculation Logic)
 const onTimeChange = () => {
