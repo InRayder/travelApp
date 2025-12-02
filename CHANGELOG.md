@@ -1,5 +1,29 @@
 # 更新日誌 (Changelog)
 
+## [0.1.3] - 2025-12-03
+
+### 主要功能 (Major Features)
+- **準備清單頁面 (Checklist)**: 新增旅程準備清單功能,內建「行前準備」與「退房前準備」兩大分類,使用者可自行新增類別與項目。
+- **AI 智能匯入攻略 (AI Import Guide)**: 新增從社群媒體 (Instagram/Facebook) 貼文連結或內容自動生成旅遊攻略卡片的功能,AI 會自動分析景點資訊、必看重點與參觀撇步。
+- **PWA 分享目標 (Share Target)**: 應用程式現在支援作為分享目標,使用者可直接從其他 App 分享內容至 Easy Trip,並自動開啟 AI 智能匯入功能。
+
+### 其他新增 (Other Additions)
+- **新增 InputModal 元件**: 通用的輸入對話框元件,用於快速輸入文字 (如新增清單分類名稱)。
+- **新增 aiService**: 抽離 AI 生成攻略的邏輯至獨立的 service 檔案,提升程式碼可維護性。
+- **路由守衛 (Route Guard)**: 新增路由守衛功能,自動偵測分享目標參數並導向攻略頁面。
+- **PWA 安裝提示優化**: 改善安裝提示邏輯,將 `beforeinstallprompt` 事件儲存至 Pinia store,並整合至新手導覽 (Onboarding) 中。
+- **AI 模型升級**: 預設 AI 模型從 `gemini-1.5-flash` 升級至 `gemini-2.5-flash`,提供更快速與精準的回應。
+
+### 介面優化 (UI Improvements)
+- **底部導覽列**: 新增「準備清單」導覽按鈕,並調整原有按鈕配置。
+- **新手導覽 (Onboarding)**: 新增第五個投影片,專門引導使用者安裝 PWA 應用程式。
+- **安裝提示**: 只在新手導覽關閉後才顯示安裝提示,避免重複干擾。
+- **記帳頁面 FAB 調整**: 將新增費用按鈕位置下移,避免與底部導覽列重疊。
+
+### 修正項目 (Fixed)
+- **事件監聽器管理**: 在 `App.vue` 中正確新增與移除 `beforeinstallprompt` 事件監聽器,避免記憶體洩漏。
+- **InstallPrompt 元件重構**: 將安裝提示事件管理移至 Pinia store,簡化元件邏輯。
+
 ## [0.1.2] - 2025-12-02
 
 ### 主要功能 (Major Features)
