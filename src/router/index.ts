@@ -25,8 +25,26 @@ const router = createRouter({
             path: '/conversation',
             name: 'conversation',
             component: () => import('../views/ConversationView.vue')
+        },
+        {
+            path: '/checklist',
+            name: 'checklist',
+            component: () => import('../views/ChecklistView.vue')
         }
     ]
+})
+
+router.beforeEach((to, _from, next) => {
+    // Check if we have share target params
+    if (to.path === '/' && (to.query.title || to.query.text || to.query.url)) {
+        console.log('Share target params detected:', to.query)
+        next({
+            name: 'guides',
+            query: to.query
+        })
+    } else {
+        next()
+    }
 })
 
 export default router

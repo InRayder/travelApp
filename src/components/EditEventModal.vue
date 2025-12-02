@@ -596,7 +596,7 @@ const generateGuide = async () => {
   isGuideGenerating.value = true
   try {
     const genAI = new GoogleGenerativeAI(store.settings.aiSettings.apiKey)
-    const model = genAI.getGenerativeModel({ model: store.settings.aiSettings.model || 'gemini-1.5-flash' })
+    const model = genAI.getGenerativeModel({ model: store.settings.aiSettings.model || 'gemini-2.5-flash' })
 
     const customPrompt = store.settings.aiSettings.customPrompt ? `\nUser preferences: ${store.settings.aiSettings.customPrompt}` : ''
 
@@ -732,7 +732,7 @@ const suggestTransport = async (transportIndex: number) => {
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: store.settings.aiSettings?.model || 'gemini-1.5-flash' })
+    const model = genAI.getGenerativeModel({ model: store.settings.aiSettings?.model || 'gemini-2.5-flash' })
 
     const customPrompt = store.settings.aiSettings?.customPrompt ? `\nUser preferences: ${store.settings.aiSettings.customPrompt}` : ''
 

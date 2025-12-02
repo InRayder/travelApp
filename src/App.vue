@@ -22,14 +22,14 @@
       <font-awesome-icon icon="wand-magic-sparkles" class="text-xl" />
     </button>
 
-    <InstallPrompt />
+    <InstallPrompt v-if="!store.isOnboardingOpen" />
     <OnboardingModal :isOpen="store.isOnboardingOpen" @close="store.completeOnboarding()" />
   </div>
   <SpeedInsights />
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { RouterView } from 'vue-router'
 import { useTripStore } from './stores/trip.ts'
 import AppHeader from './components/AppHeader.vue'
@@ -45,8 +45,20 @@ const settingsOpen = ref(false)
 const aiAssistantOpen = ref(false)
 const store = useTripStore()
 
+const handleInstallPrompt = (e: Event) => {
+  // Prevent the mini-infobar from appearing on mobile
+  e.preventDefault()
+  // Stash the event so it can be triggered later.
+  store.setInstallPrompt(e)
+}
+
 onMounted(() => {
   store.loadData()
   store.checkOnboarding()
+  window.addEventListener('beforeinstallprompt', handleInstallPrompt)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeinstallprompt', handleInstallPrompt)
 })
 </script>

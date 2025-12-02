@@ -67,7 +67,7 @@
               </div>
             </div>
 
-            <!-- Slide 4: Sample Data -->
+            <!-- Slide 3: Sample Data -->
             <div v-if="currentSlide === 3" key="3" class="absolute inset-0 p-8 flex flex-col items-center justify-center text-center space-y-6">
               <div class="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center text-4xl text-yellow-600 mb-2">
                 <font-awesome-icon icon="fa-solid fa-file-pen" />
@@ -82,6 +82,47 @@
               </div>
             </div>
 
+            <!-- Slide 4: Install App -->
+            <div v-if="currentSlide === 4" key="4" class="absolute inset-0 p-8 flex flex-col items-center justify-center text-center space-y-6">
+              <div class="w-24 h-24 bg-jp-dark rounded-full flex items-center justify-center text-4xl text-white mb-2 shadow-lg">
+                <font-awesome-icon icon="fa-solid fa-download" />
+              </div>
+              <h3 class="text-xl font-bold text-jp-dark">安裝應用程式</h3>
+              <p class="text-gray-600 text-sm leading-relaxed px-4">
+                將 Easy Trip 加入主畫面，<br>
+                享受更流暢的離線體驗！
+              </p>
+              
+              <div v-if="canInstall" class="w-full">
+                <button 
+                  @click="installApp"
+                  class="w-full py-3 bg-jp-dark text-white rounded-xl font-bold shadow-lg hover:bg-gray-800 transition-all flex items-center justify-center gap-2"
+                >
+                  <font-awesome-icon icon="fa-solid fa-download" />
+                  立即安裝
+                </button>
+              </div>
+
+              <div v-else-if="isIOS && !isStandalone" class="bg-gray-50 p-4 rounded-xl text-xs text-left w-full space-y-3 border border-gray-100">
+                <p class="font-bold text-center text-gray-700 mb-2">iOS 安裝教學</p>
+                <div class="flex items-center gap-3">
+                  <font-awesome-icon icon="fa-solid fa-arrow-up-from-bracket" class="text-blue-500 text-lg" />
+                  <span>1. 點擊瀏覽器下方的「分享」</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <font-awesome-icon icon="fa-regular fa-square-plus" class="text-gray-600 text-lg" />
+                  <span>2. 選擇「加入主畫面」</span>
+                </div>
+              </div>
+
+              <div v-else class="bg-green-50 p-4 rounded-xl text-center w-full border border-green-100">
+                <p class="text-green-600 font-bold">
+                  <font-awesome-icon icon="fa-solid fa-check-circle" class="mr-2" />
+                  已安裝或不支援
+                </p>
+              </div>
+            </div>
+
           </transition-group>
         </div>
 
@@ -90,7 +131,7 @@
           <!-- Dots -->
           <div class="flex gap-2">
             <div 
-              v-for="i in 4" 
+              v-for="i in 5" 
               :key="i"
               class="w-2 h-2 rounded-full transition-all duration-300"
               :class="currentSlide === i - 1 ? 'bg-jp-dark w-6' : 'bg-gray-300'"
@@ -108,7 +149,7 @@
             </button>
             
             <button 
-              v-if="currentSlide < 3"
+              v-if="currentSlide < 4"
               @click="nextSlide"
               class="px-6 py-2 bg-jp-dark text-white rounded-xl font-bold text-sm hover:bg-gray-800 transition-all shadow-lg shadow-gray-200"
             >
@@ -131,18 +172,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useTripStore } from '../stores/trip'
 
 defineProps<{
   isOpen: boolean
 }>()
 
 const emit = defineEmits(['close'])
+const store = useTripStore()
 
 const currentSlide = ref(0)
+const totalSlides = 4 // 0, 1, 2, 3, 4 (Total 5 slides)
+
+const canInstall = computed(() => !!store.installPromptEvent)
+const isIOS = computed(() => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase()))
+const isStandalone = computed(() => ('standalone' in window.navigator) && (window.navigator as any).standalone)
 
 const nextSlide = () => {
-  if (currentSlide.value < 3) {
+  if (currentSlide.value < totalSlides) {
     currentSlide.value++
   }
 }
@@ -151,6 +199,14 @@ const prevSlide = () => {
   if (currentSlide.value > 0) {
     currentSlide.value--
   }
+}
+
+const installApp = async () => {
+  if (!store.installPromptEvent) return
+  store.installPromptEvent.prompt()
+  const { outcome } = await store.installPromptEvent.userChoice
+  console.log(`User response to the install prompt: ${outcome}`)
+  store.clearInstallPrompt()
 }
 
 const finish = () => {

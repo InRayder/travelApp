@@ -613,7 +613,7 @@ const updateVoice = (e: Event) => {
 }
 
 const updateAiSetting = (key: 'apiKey' | 'model' | 'customPrompt', value: string) => {
-  const currentAiSettings = store.settings.aiSettings || { apiKey: '', model: 'gemini-1.5-flash' }
+  const currentAiSettings = store.settings.aiSettings || { apiKey: '', model: 'gemini-2.5-flash' }
   store.updateSettings({
     aiSettings: {
       ...currentAiSettings,

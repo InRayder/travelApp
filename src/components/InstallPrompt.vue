@@ -77,40 +77,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useTripStore } from '../stores/trip'
 
-const showInstallPrompt = ref(false)
-const deferredPrompt = ref<any>(null)
+const store = useTripStore()
+const showInstallPrompt = computed(() => !!store.installPromptEvent)
 const isIOS = ref(false)
 
-const handleInstallPrompt = (e: Event) => {
-  // Prevent the mini-infobar from appearing on mobile
-  e.preventDefault()
-  // Stash the event so it can be triggered later.
-  deferredPrompt.value = e
-  // Update UI notify the user they can install the PWA
-  showInstallPrompt.value = true
-}
-
 const installPWA = async () => {
-  if (!deferredPrompt.value) return
+  if (!store.installPromptEvent) return
   
   // Show the install prompt
-  deferredPrompt.value.prompt()
+  store.installPromptEvent.prompt()
   
   // Wait for the user to respond to the prompt
-  const { outcome } = await deferredPrompt.value.userChoice
+  const { outcome } = await store.installPromptEvent.userChoice
   console.log(`User response to the install prompt: ${outcome}`)
   
   // We've used the prompt, and can't use it again, throw it away
-  deferredPrompt.value = null
-  showInstallPrompt.value = false
+  store.clearInstallPrompt()
 }
 
 const dismissPrompt = () => {
-  showInstallPrompt.value = false
-  deferredPrompt.value = null
-  // Save to local storage to not show again for a while? (Optional, skipping for now as per request)
+  store.clearInstallPrompt()
 }
 
 const checkIfIOS = () => {
@@ -118,28 +107,9 @@ const checkIfIOS = () => {
   return /iphone|ipad|ipod/.test(userAgent)
 }
 
-const isInStandaloneMode = () => {
-  return ('standalone' in window.navigator) && (window.navigator as any).standalone
-}
-
 onMounted(() => {
   // Check if iOS
   isIOS.value = checkIfIOS()
-  
-  // If iOS and not in standalone mode, show instructions
-  if (isIOS.value && !isInStandaloneMode()) {
-    // Add a small delay to not be intrusive immediately
-    setTimeout(() => {
-      showInstallPrompt.value = true
-    }, 2000)
-  } else {
-    // Android / Desktop
-    window.addEventListener('beforeinstallprompt', handleInstallPrompt)
-  }
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('beforeinstallprompt', handleInstallPrompt)
 })
 </script>
 

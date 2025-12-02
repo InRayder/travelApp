@@ -117,7 +117,7 @@ export interface Settings {
     voiceURI?: string; // 語音設定
     aiSettings?: {
         apiKey: string;
-        model: string; // 'gemini-1.5-flash' | 'gemini-1.5-pro'
+        model: string; // 'gemini-2.5-flash' | 'gemini-1.5-pro'
         customPrompt?: string; // 使用者自訂提示詞 (e.g. "少走路", "優先搭地鐵")
     };
 }
@@ -142,6 +142,20 @@ export interface TripState {
     headerCollapsed: boolean; // 標題列是否收合
     currencies: Record<string, Currency>; // 匯率設定
     isOnboardingOpen: boolean; // 是否顯示導覽
+    installPromptEvent: any; // Store the beforeinstallprompt event
+    checklists: ChecklistCategory[];
+}
+
+export interface ChecklistItem {
+    id: string;
+    text: string;
+    checked: boolean;
+}
+
+export interface ChecklistCategory {
+    id: string;
+    name: string;
+    items: ChecklistItem[];
 }
 
 const DEFAULT_GUIDES: Record<string, Guide> = {
@@ -354,7 +368,9 @@ export const useTripStore = defineStore('trip', {
             { id: 'transport', name: '交通', icon: 'fa-solid fa-train' },
             { id: 'flight', name: '航班', icon: 'fa-solid fa-plane' },
         ],
-        headerCollapsed: false
+        headerCollapsed: false,
+        installPromptEvent: null as any, // Store the beforeinstallprompt event
+        checklists: [],
     }),
     getters: {
         currentCurrency(): Currency {
@@ -362,6 +378,52 @@ export const useTripStore = defineStore('trip', {
         }
     },
     actions: {
+        setInstallPrompt(event: any) {
+            this.installPromptEvent = event
+        },
+        clearInstallPrompt() {
+            this.installPromptEvent = null
+        },
+        addChecklistItem(categoryId: string, text: string) {
+            const category = this.checklists.find(c => c.id === categoryId)
+            if (category) {
+                category.items.push({
+                    id: crypto.randomUUID(),
+                    text,
+                    checked: false
+                })
+                this.saveData()
+            }
+        },
+        toggleChecklistItem(categoryId: string, itemId: string) {
+            const category = this.checklists.find(c => c.id === categoryId)
+            if (category) {
+                const item = category.items.find(i => i.id === itemId)
+                if (item) {
+                    item.checked = !item.checked
+                    this.saveData()
+                }
+            }
+        },
+        deleteChecklistItem(categoryId: string, itemId: string) {
+            const category = this.checklists.find(c => c.id === categoryId)
+            if (category) {
+                category.items = category.items.filter(i => i.id !== itemId)
+                this.saveData()
+            }
+        },
+        addChecklistCategory(name: string) {
+            this.checklists.push({
+                id: crypto.randomUUID(),
+                name,
+                items: []
+            })
+            this.saveData()
+        },
+        deleteChecklistCategory(id: string) {
+            this.checklists = this.checklists.filter(c => c.id !== id)
+            this.saveData()
+        },
         // Onboarding Actions
         checkOnboarding() {
             const seen = localStorage.getItem('has_seen_onboarding_v1')
@@ -476,6 +538,37 @@ export const useTripStore = defineStore('trip', {
                         this.backups = storedBackups.length > 0 ? storedBackups : (DEFAULT_DATA.backups || [])
                     }
 
+                    // Initialize checklists if missing
+                    if (!parsed.checklists) {
+                        this.checklists = [
+                            {
+                                id: 'pre-trip',
+                                name: '行前準備',
+                                items: [
+                                    { id: '1', text: '檢查護照有效期', checked: false },
+                                    { id: '2', text: '預訂機票與住宿', checked: false },
+                                    { id: '3', text: '購買旅遊保險', checked: false },
+                                    { id: '4', text: '申請簽證 (如需要)', checked: false },
+                                    { id: '5', text: '兌換外幣 / 開通跨國提款', checked: false },
+                                    { id: '6', text: '購買 SIM 卡 / 漫遊', checked: false },
+                                ]
+                            },
+                            {
+                                id: 'checkout',
+                                name: '退房前準備',
+                                items: [
+                                    { id: '1', text: '檢查所有抽屜與衣櫃', checked: false },
+                                    { id: '2', text: '確認充電器與轉接頭', checked: false },
+                                    { id: '3', text: '歸還房卡 / 鑰匙', checked: false },
+                                    { id: '4', text: '確認冰箱內物品', checked: false },
+                                    { id: '5', text: '檢查浴室用品', checked: false },
+                                ]
+                            }
+                        ]
+                    } else {
+                        this.checklists = parsed.checklists
+                    }
+
                 } catch (e) {
                     console.error("Data load failed", e)
                     this.loadExampleData()
@@ -495,7 +588,8 @@ export const useTripStore = defineStore('trip', {
                 settings: this.settings,
                 title: this.title,
                 startDate: this.startDate,
-                currencies: this.currencies
+                currencies: this.currencies,
+                checklists: this.checklists
             }
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
         },
@@ -513,6 +607,31 @@ export const useTripStore = defineStore('trip', {
                 'TWD': { symbol: 'NT$', rate: 0.22, name: '新台幣 (台灣)' },
                 'JPY': { symbol: '¥', rate: 1, name: '日圓 (日本)' }
             }
+            this.checklists = [
+                {
+                    id: 'pre-trip',
+                    name: '行前準備',
+                    items: [
+                        { id: '1', text: '檢查護照有效期', checked: false },
+                        { id: '2', text: '預訂機票與住宿', checked: false },
+                        { id: '3', text: '購買旅遊保險', checked: false },
+                        { id: '4', text: '申請簽證 (如需要)', checked: false },
+                        { id: '5', text: '兌換外幣 / 開通跨國提款', checked: false },
+                        { id: '6', text: '購買 SIM 卡 / 漫遊', checked: false },
+                    ]
+                },
+                {
+                    id: 'checkout',
+                    name: '退房前準備',
+                    items: [
+                        { id: '1', text: '檢查所有抽屜與衣櫃', checked: false },
+                        { id: '2', text: '確認充電器與轉接頭', checked: false },
+                        { id: '3', text: '歸還房卡 / 鑰匙', checked: false },
+                        { id: '4', text: '確認冰箱內物品', checked: false },
+                        { id: '5', text: '檢查浴室用品', checked: false },
+                    ]
+                }
+            ]
 
             // Initialize default data with default currency and IDs
             this.days.forEach(day => {

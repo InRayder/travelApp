@@ -55,7 +55,7 @@
     </div>
 
     <!-- FAB -->
-    <button @click="openAddExpense" class="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-jp-accent-green text-white shadow-lg shadow-green-500/30 flex items-center justify-center text-xl hover:scale-110 transition-transform z-40">
+    <button @click="openAddExpense" class="fixed bottom-40 right-6 w-14 h-14 rounded-full bg-jp-accent-green text-white shadow-lg shadow-green-500/30 flex items-center justify-center text-xl hover:scale-110 transition-transform z-40">
       <font-awesome-icon icon="fa-solid fa-plus" />
     </button>
 

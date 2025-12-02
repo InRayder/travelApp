@@ -17,6 +17,16 @@ export default defineConfig({
         short_name: 'Easy Trip',
         description: 'Easy Trip Itinerary',
         theme_color: '#ffffff',
+        share_target: {
+          action: '/',
+          method: 'GET',
+          enctype: 'application/x-www-form-urlencoded',
+          params: {
+            title: 'title',
+            text: 'text',
+            url: 'url'
+          }
+        },
         icons: [
           {
             src: 'pwa-192x192.png',

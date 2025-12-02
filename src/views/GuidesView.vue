@@ -40,6 +40,12 @@
           <font-awesome-icon icon="fa-solid fa-plus" class="text-2xl mb-2" />
           <span class="text-xs font-bold">新增攻略</span>
         </div>
+
+        <!-- Import Guide Button -->
+        <div @click="openImportModal" class="aspect-[4/5] rounded-2xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-jp-mustard hover:text-jp-mustard hover:bg-yellow-50 transition-colors cursor-pointer">
+          <font-awesome-icon icon="fa-solid fa-wand-magic-sparkles" class="text-2xl mb-2" />
+          <span class="text-xs font-bold">AI 智能匯入</span>
+        </div>
       </div>
     </div>
 
@@ -51,6 +57,13 @@
       @close="guideModalOpen = false"
       @save="handleGuideSave"
     />
+
+    <ImportGuideModal
+      :isOpen="importModalOpen"
+      :initialData="importInitialData"
+      @close="importModalOpen = false"
+      @save="handleImportSave"
+    />
   </div>
 </template>
 
@@ -58,15 +71,22 @@
 import { ref, onUnmounted } from 'vue'
 import { useTripStore } from '../stores/trip.ts'
 import { storeToRefs } from 'pinia'
+import { useRoute, useRouter } from 'vue-router'
 import GuideModal from '../components/GuideModal.vue'
+import ImportGuideModal from '../components/ImportGuideModal.vue'
 import type { Guide } from '../stores/trip.ts'
 
 const store = useTripStore()
 const { attractionGuides } = storeToRefs(store)
+const route = useRoute()
+const router = useRouter()
 
 const activeGuide = ref<{ title: string; data: Guide } | null>(null)
 const guideModalOpen = ref(false)
 const guideUpdateCount = ref(0)
+
+const importModalOpen = ref(false)
+const importInitialData = ref<{ title?: string, text?: string, url?: string }>({})
 
 const initialEditMode = ref(false)
 
@@ -126,6 +146,35 @@ const handleScroll = (e: Event) => {
   } else {
     if (store.headerCollapsed) store.setHeaderCollapsed(false)
   }
+}
+
+const openImportModal = () => {
+  importInitialData.value = {}
+  importModalOpen.value = true
+}
+
+const handleImportSave = (title: string, data: Guide) => {
+  // Save to store
+  store.attractionGuides[title] = JSON.parse(JSON.stringify(data))
+  store.saveData()
+  
+  // Open the newly created guide
+  openGuide(title)
+}
+
+// Check for share target params
+if (route.query.title || route.query.text || route.query.url) {
+  console.log('GuidesView received share params:', route.query)
+  importInitialData.value = {
+    title: route.query.title as string,
+    text: route.query.text as string,
+    url: route.query.url as string
+  }
+  console.log('GuidesView set importInitialData:', importInitialData.value)
+  importModalOpen.value = true
+  
+  // Clear query params to prevent reopening on refresh
+  router.replace({ query: {} })
 }
 
 onUnmounted(() => {

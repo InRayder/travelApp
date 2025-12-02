@@ -357,7 +357,7 @@ const sendMessage = async () => {
 
   try {
     const apiKey = store.settings.aiSettings?.apiKey
-    const modelName = store.settings.aiSettings?.model || 'gemini-1.5-flash'
+    const modelName = store.settings.aiSettings?.model || 'gemini-2.5-flash'
     
     if (!apiKey) throw new Error('API Key not found')
 
