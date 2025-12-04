@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 z-[300] flex items-center justify-center px-4">
+  <div v-if="isOpen" class="fixed inset-0 flex items-center justify-center px-4" :style="{ zIndex }">
     <!-- Backdrop -->
     <div class="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity" @click="handleCancel"></div>
 
@@ -32,7 +32,8 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits } from 'vue'
+import { defineProps, defineEmits, toRef } from 'vue'
+import { useDynamicZIndex } from '../composables/useZIndex'
 
 const props = defineProps({
   isOpen: {
@@ -64,6 +65,8 @@ const props = defineProps({
     default: true
   }
 })
+
+const { zIndex } = useDynamicZIndex(toRef(props, 'isOpen'))
 
 const emit = defineEmits(['close', 'confirm'])
 

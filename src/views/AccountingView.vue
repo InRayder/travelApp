@@ -158,10 +158,13 @@ const settlement = computed(() => {
     
     // Split logic
     if (e.splitMethod === 'average') {
-      const perPerson = e.amount / e.involved.length
-      e.involved.forEach(p => balances[p] -= perPerson)
+      const involved = e.involved || []
+      if (involved.length > 0) {
+        const perPerson = e.amount / involved.length
+        involved.forEach(p => balances[p] -= perPerson)
+      }
     } else {
-      for (const [person, amount] of Object.entries(e.customShares)) {
+      for (const [person, amount] of Object.entries(e.customShares || {})) {
         balances[person] -= amount
       }
     }

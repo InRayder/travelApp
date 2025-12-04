@@ -1,6 +1,6 @@
 <template>
   <transition name="slide-up">
-    <div v-if="isOpen" class="fixed inset-0 z-[9999] flex items-end justify-center pointer-events-none">
+    <div v-if="isOpen" class="fixed inset-0 flex items-end justify-center pointer-events-none" :style="{ zIndex }">
       <div class="absolute inset-0 bg-black/30 pointer-events-auto transition-opacity" @click="emit('close')"></div>
       <div class="bg-white w-full max-w-md rounded-t-3xl p-6 pointer-events-auto shadow-2xl modal-body flex flex-col relative z-50">
         
@@ -24,7 +24,7 @@
           <div>
             <label class="text-xs font-bold text-gray-500 block mb-2">類別</label>
             <div class="grid grid-cols-6 gap-2">
-              <button v-for="cat in store.categories" :key="cat.id" @click="form.category = cat.id" class="flex flex-col items-center justify-center p-2 rounded-xl border transition-all" :class="form.category === cat.id ? 'bg-jp-dark text-white border-jp-dark' : 'bg-gray-50 text-gray-400 border-transparent'">
+              <button v-for="cat in store.categories" :key="cat.id" @click="form.category = cat.id as any" class="flex flex-col items-center justify-center p-2 rounded-xl border transition-all" :class="form.category === cat.id ? 'bg-jp-dark text-white border-jp-dark' : 'bg-gray-50 text-gray-400 border-transparent'">
                 <font-awesome-icon :icon="cat.icon" class="text-sm mb-1" />
                 <span class="text-[9px]">{{ cat.name }}</span>
               </button>
@@ -464,26 +464,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, toRaw, nextTick, computed } from 'vue'
+import { ref, watch, toRaw, nextTick, computed, onMounted, toRef } from 'vue'
 import { useTripStore } from '../stores/trip.ts'
 import type { Event as TripEvent, Transport } from '../stores/trip.ts'
 import { diffMinutes, addMinutes } from '../utils/time.ts'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import LoadingAnimation from './LoadingAnimation.vue'
 import GuideModal from './GuideModal.vue'
+import { useDynamicZIndex } from '../composables/useZIndex'
+
+const store = useTripStore()
 
 const props = defineProps<{
   isOpen: boolean
-  initialData: TripEvent | null
-  isBackup: boolean
-  isAdding: boolean
+  initialData?: TripEvent | null
+  initialDate?: string
+  isBackup?: boolean
+  isAdding?: boolean
   scrollToTransport?: boolean
-  dayIndex: number
+  dayIndex?: number
 }>()
+
+const { zIndex } = useDynamicZIndex(toRef(props, 'isOpen'))
 
 const emit = defineEmits(['close', 'save', 'delete', 'move-to-backup'])
 
-const store = useTripStore()
 const isAiLoading = ref(false)
 const isGuideGenerating = ref(false)
 const aiReasoning = ref<{ index: number, text: string } | null>(null)

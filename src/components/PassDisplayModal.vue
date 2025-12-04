@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm" @click="close">
+  <div v-if="isOpen" class="fixed inset-0 flex items-center justify-center bg-black/90 backdrop-blur-sm" @click="close" :style="{ zIndex }">
     <div class="relative w-full h-full flex flex-col items-center justify-center p-4" @click.stop>
       
       <!-- Close Button -->
@@ -27,13 +27,16 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, onMounted, onUnmounted } from 'vue'
 import type { TransportPass } from '../stores/trip.ts'
+import { toRef } from 'vue'
+import { useDynamicZIndex } from '../composables/useZIndex'
 
 const props = defineProps<{
   isOpen: boolean
   pass: TransportPass
 }>()
+
+const { zIndex } = useDynamicZIndex(toRef(props, 'isOpen'))
 
 const emit = defineEmits(['close'])
 

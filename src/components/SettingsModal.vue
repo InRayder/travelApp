@@ -1,6 +1,6 @@
 <template>
   <transition name="fade">
-    <div v-if="isOpen" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
+    <div v-if="isOpen" class="fixed inset-0 flex items-center justify-center p-4" :style="{ zIndex }">
       <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="emit('close')"></div>
       <div class="bg-white w-full max-w-xs rounded-2xl shadow-2xl overflow-hidden relative z-10 max-h-[85vh] flex flex-col">
         
@@ -390,9 +390,10 @@
 
 <script setup lang="ts">
 
-import { ref } from 'vue'
+import { ref, watch, toRef } from 'vue'
 import { useTripStore } from '../stores/trip.ts'
 import ConfirmModal from './ConfirmModal.vue'
+import { useDynamicZIndex } from '../composables/useZIndex'
 import pkg from '../../package.json'
 
 const appName = pkg.name
@@ -401,6 +402,8 @@ const appVersion = pkg.version
 const props = defineProps<{
   isOpen: boolean
 }>()
+
+const { zIndex } = useDynamicZIndex(toRef(props, 'isOpen'))
 
 const emit = defineEmits(['close'])
 
@@ -416,6 +419,12 @@ const tabs = [
   { id: 'passes', name: '票券' },
   { id: 'system', name: '系統' }
 ]
+
+watch(() => store.settingsTab, (newTab) => {
+  if (newTab) {
+    activeTab.value = newTab
+  }
+}, { immediate: true })
 
 // 確認視窗狀態
 const confirmModalOpen = ref(false)
@@ -643,12 +652,13 @@ const localTitle = ref('')
 const localStartDate = ref('')
 
 // Sync local state with store when modal opens
-import { watch } from 'vue'
+
 watch(() => props.isOpen, (newVal) => {
   if (newVal) {
     localTitle.value = store.title
     localStartDate.value = store.startDate
     localTravelers.value = [...store.travelers]
+    activeTab.value = store.settingsTab // Sync tab
     loadVoices()
   }
 })
@@ -767,11 +777,18 @@ const aiPrompt = `請扮演一位專業的旅遊行程規劃助手。
 ### 步驟四：生成 JSON
 當我確認上述資訊或給予修訂後，請依據我最終的決定，並遵守以下規則生成 JSON：
 1. 自動判斷類別 (fun, food, shop, stay, transport, flight)。
+   - **注意**：\`transport\` 類別僅用於「大型車站轉乘」、「長途移動」或「作為中繼站」的情況。
+   - 一般的短程移動（如地鐵、公車）請直接包含在該活動的 \`transports\` 陣列中，**不要**獨立建立一個 category 為 \`transport\` 的事件。
 2. 若交通方式未明，請預設為步行 (type: 'walk')。
 3. 交通類型請使用：'walk' (步行), 'public' (公車/地鐵), 'express' (新幹線/特急), 'ferry' (船), 'taxi' (計程車/Uber), 'drive' (自駕), 'flight' (飛機)。
 4. 若我確認加入導覽，請將資料填入 \`attractionGuides\` 物件中。
 5. 若活動類別為 'food'，請自動搜尋並填入 Tabelog 連結至 \`link\` 欄位。
-6. 針對 \`attractionGuides\`，請嘗試從 Unsplash、Pexels 或 Pixabay 等免費圖庫搜尋並填入高品質的背景圖片連結至 \`image\` 欄位。
+6. 針對 \`attractionGuides\`：
+   - 請嘗試從 Unsplash、Pexels 或 Pixabay 等免費圖庫搜尋並填入高品質的背景圖片連結至 \`thumbnail_url\` 欄位。
+   - 請搜尋該景點的官方網站或相關介紹連結填入 \`original_url\`。
+   - 請根據景點位置填入 \`location.name\` (例如 "福岡・博多")。
+   - 請根據行程情境填入 \`user_notes\` (例如 "想去拍照", "聽說很好吃")。
+   - **若輸入內容包含 Google Maps 連結**，請優先使用該連結中的地點名稱與位置資訊。
 7. 針對 \`color\` 欄位，**必須**使用 Tailwind CSS 的標準漸層 class，例如 'from-pink-500 to-red-600'。
    - **可用顏色名稱**：slate, gray, zinc, neutral, stone, red, orange, amber, yellow, lime, green, emerald, teal, cyan, sky, blue, indigo, violet, purple, fuchsia, pink, rose。
    - **可用色階**：50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950。
@@ -794,14 +811,23 @@ interface TripData {
 }
 
 interface Guide {
+  id: string; // Unique identifier (UUID)
   color: string; // 必須是 Tailwind CSS 漸層 class (e.g. "from-pink-500 to-red-600")。可用顏色：slate, gray, zinc, neutral, stone, red, orange, amber, yellow, lime, green, emerald, teal, cyan, sky, blue, indigo, violet, purple, fuchsia, pink, rose。
   icon: string; // 圖示 (FontAwesome), e.g., "fa-solid fa-torii-gate"
   desc: string; // 景點介紹 (約 50-100 字)
   tags: string[]; // 標籤 (3-5 個)
   highlights: string[]; // 必看重點 (3 個)
   tips: string; // 參觀小撇步
-  link: string; // 官方網站或相關連結
-  image?: string; // 背景圖片連結 (請搜尋免費圖庫)
+  original_url: string; // 官方網站或相關連結
+  thumbnail_url?: string; // 背景圖片連結 (請搜尋免費圖庫)
+  media_type: 'instagram' | 'youtube' | 'web'; // 媒體類型
+  location: { 
+    name: string;
+    coordinates?: [number, number];
+    google_maps_id?: string;
+  }; // 地點名稱 (e.g. "福岡・太宰府")
+  user_notes: string; // 個人化筆記 (e.g. "必吃梅枝餅")
+  status: 'want_to_go' | 'planned' | 'visited'; // 預設 'planned'
 }
 
 interface Day {
@@ -825,6 +851,7 @@ interface Transport {
   cost?: number;
   direction?: string; // 開往方向 (e.g. 往新宿)
   note?: string; // 交通備註
+  duration?: number; // 預估時間 (分鐘)
   
   // Public (Bus/Subway)
   line?: string;      // 路線 (e.g. 機場線, 50號公車)
@@ -844,6 +871,8 @@ interface Transport {
 
   // Schedules (Express & Ferry)
   schedules?: TransportSchedule[]; // 前後班次 (Max 5)
+  
+  passId?: string; // 使用的票券 ID
 }
 
 interface Event {
@@ -855,12 +884,27 @@ interface Event {
   category: 'fun' | 'food' | 'shop' | 'stay' | 'transport' | 'flight';
   time: string; // 開始時間 (HH:MM)
   endTime?: string; // 結束時間 (HH:MM)
+  duration?: number; // 持續時間 (分鐘)
   cost: number; // 預估費用 (日幣)
   currency?: string; // 預設 "JPY"
   notes?: string; // 備註
   link?: string; // 相關連結
   linkedGuide?: string; // 關聯的導覽 ID (Key of attractionGuides)
   transports?: Transport[]; // 交通資訊 (含航班資訊)
+}
+
+interface Expense {
+    id: string;
+    title: string;
+    amount: number;
+    currency: string;
+    category: string;
+    date: string;
+    payer: string;
+    split: string[];
+    splitMethod?: 'equal' | 'exact' | 'percent' | 'shares' | 'adjustment' | 'average' | 'custom';
+    involved?: string[];
+    customShares?: Record<string, number>;
 }
 \`\`\`
 

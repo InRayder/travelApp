@@ -1,7 +1,10 @@
 <template>
   <div class="my-3 flex items-center relative z-10 transition-all duration-300 transport-connector">
     <div class="absolute -left-[1.3rem] top-1/2 -translate-y-1/2 w-3 h-[2px] bg-gray-200"></div>
-    <div v-if="hasTransports" @click="emit('open-transport', item, index)" class="flex flex-col items-start gap-2 bg-white border border-gray-200 rounded-2xl px-3 py-2 shadow-sm text-xs cursor-pointer hover:border-jp-mustard hover:shadow-md transition-all w-full max-w-[240px]">
+    <div v-if="hasTransports" @click="emit('open-transport', currentEvent, index)" 
+      class="flex flex-col items-start gap-2 bg-white border border-gray-200 rounded-2xl px-3 py-2 shadow-sm text-xs cursor-pointer hover:border-jp-mustard hover:shadow-md transition-all w-full max-w-[240px]"
+      :class="{ 'ring-2 ring-red-500 ring-offset-2': hasConflict }"
+    >
       
       <div v-for="(transport, idx) in transports" :key="idx" class="w-full">
         <!-- Segment Connector (if not first) -->
@@ -65,7 +68,7 @@
     </div>
 
     <!-- Empty State: Add Transport Button -->
-    <div v-else @click="emit('add-transport', item, index)" class="flex items-center gap-2 bg-gray-50 border border-dashed border-gray-300 rounded-2xl px-3 py-2 text-xs cursor-pointer hover:bg-white hover:border-jp-mustard hover:text-jp-mustard transition-all w-full max-w-[240px] group">
+    <div v-else @click="emit('add-transport', currentEvent, index)" class="flex items-center gap-2 bg-gray-50 border border-dashed border-gray-300 rounded-2xl px-3 py-2 text-xs cursor-pointer hover:bg-white hover:border-jp-mustard hover:text-jp-mustard transition-all w-full max-w-[240px] group">
       <div class="w-6 h-6 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center group-hover:bg-jp-mustard group-hover:text-white transition-colors">
         <font-awesome-icon icon="fa-solid fa-plus" class="text-[10px]" />
       </div>
@@ -92,18 +95,15 @@ import PassDisplayModal from './PassDisplayModal.vue'
 const store = useTripStore()
 
 const props = defineProps<{
-  item: Event
+  previousEvent?: Event
+  currentEvent: Event
   index: number
+  hasConflict?: boolean
 }>()
 
 const emit = defineEmits(['open-transport', 'add-transport'])
 
-const getDisplayTransports = (item: Event): Transport[] => {
-  if (item.transports && item.transports.length > 0) {
-    return item.transports
-  }
-  return [] // Return empty if no transports
-}
+
 
 const getTransportIcon = (type: string) => {
   const map: Record<string, string> = { 
@@ -124,8 +124,8 @@ const getTransportIcon = (type: string) => {
   return map[type] || 'fa-solid fa-arrow-right'
 }
 
-const transports = computed(() => getDisplayTransports(props.item))
-const hasTransports = computed(() => transports.value && transports.value.length > 0)
+const transports = computed(() => props.currentEvent.transports || [])
+const hasTransports = computed(() => props.currentEvent.transports && props.currentEvent.transports.length > 0)
 
 const getTransportTitle = (t: Transport) => {
   if (t.type === 'walk') return '步行前往'

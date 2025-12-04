@@ -1,6 +1,6 @@
 <template>
   <transition name="fade">
-    <div v-if="isOpen" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div v-if="isOpen" class="fixed inset-0 flex items-center justify-center p-4" :style="{ zIndex }">
       <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="emit('close')"></div>
       <div class="bg-white w-full max-w-xs rounded-2xl shadow-2xl p-4 relative z-10 transform scale-100 transition-all">
         <h3 class="text-center font-bold text-gray-700 mb-4">在此處插入行程</h3>
@@ -25,11 +25,15 @@
 
 <script setup lang="ts">
 import type { Event } from '../stores/trip.ts'
+import { toRef } from 'vue'
+import { useDynamicZIndex } from '../composables/useZIndex'
 
-defineProps<{
+const props = defineProps<{
   isOpen: boolean
   backups: Event[]
 }>()
+
+const { zIndex } = useDynamicZIndex(toRef(props, 'isOpen'))
 
 const emit = defineEmits(['close', 'new-event', 'from-backup'])
 </script>

@@ -1,6 +1,6 @@
 <template>
   <transition name="slide-up">
-    <div v-if="isOpen" class="fixed inset-0 z-[10002] flex items-end justify-center pointer-events-none">
+    <div v-if="isOpen" class="fixed inset-0 flex items-end justify-center pointer-events-none" :style="{ zIndex }">
       <div class="absolute inset-0 bg-black/40 pointer-events-auto transition-opacity backdrop-blur-sm" @click="closeModal"></div>
       
       <div class="bg-white w-full max-w-md h-[92vh] rounded-t-3xl pointer-events-auto shadow-2xl flex flex-col relative z-[100] overflow-hidden">
@@ -11,7 +11,7 @@
           <div class="absolute inset-0 bg-gradient-to-br transition-all duration-500" :class="analyzedData?.color || 'from-gray-700 to-gray-900'"></div>
           
           <!-- Background Image (if any) -->
-          <div v-if="analyzedData?.image" class="absolute inset-0 bg-cover bg-center transition-opacity duration-500 z-0" :style="{ backgroundImage: `url('${analyzedData.image}')` }">
+          <div v-if="analyzedData?.thumbnail_url" class="absolute inset-0 bg-cover bg-center transition-opacity duration-500 z-0" :style="{ backgroundImage: `url('${analyzedData.thumbnail_url}')` }">
             <div class="absolute inset-0 bg-black/30"></div>
           </div>
 
@@ -31,6 +31,10 @@
             <h2 class="text-3xl font-black text-white tracking-wide shadow-black drop-shadow-md">
               {{ analyzedData?.title || 'AI 智能匯入' }}
             </h2>
+             <div v-if="analyzedData?.location?.name" class="flex items-center text-white/80 text-xs mt-1">
+                <font-awesome-icon icon="fa-solid fa-location-dot" class="mr-1" />
+                {{ analyzedData.location.name }}
+            </div>
           </div>
         </div>
 
@@ -45,7 +49,7 @@
                 如何使用？
               </h3>
               <p class="text-xs text-blue-900/70 leading-relaxed">
-                貼上 Instagram/Facebook 貼文連結，或是直接複製貼文內容。AI 會自動分析景點資訊、必看重點與參觀撇步，並整理成精美的旅遊攻略卡片。
+                貼上 Instagram/Facebook 貼文連結、Google Maps 地點連結，或是直接複製貼文內容。AI 會自動分析景點資訊、必看重點與參觀撇步，並整理成精美的旅遊攻略卡片。
               </p>
             </div>
 
@@ -60,9 +64,14 @@
               <p class="text-[10px] text-gray-400 mt-1 text-right">越詳細的描述能讓 AI 分析越準確</p>
             </div>
 
-            <div v-if="error" class="bg-red-50 text-red-600 text-xs p-3 rounded-xl flex items-start gap-2">
-              <font-awesome-icon icon="fa-solid fa-circle-exclamation" class="mt-0.5" />
-              <span>{{ error }}</span>
+            <div v-if="error" class="bg-red-50 text-red-600 text-xs p-3 rounded-xl flex flex-col gap-2">
+              <div class="flex items-start gap-2">
+                <font-awesome-icon icon="fa-solid fa-circle-exclamation" class="mt-0.5" />
+                <span>{{ error }}</span>
+              </div>
+              <button v-if="error.includes('API Key')" @click="store.setSettingsOpen(true)" class="self-end text-xs font-bold underline hover:text-red-800">
+                前往設定
+              </button>
             </div>
 
             <!-- Loading State -->
@@ -86,24 +95,44 @@
               <input v-model="analyzedData.title" class="w-full bg-gray-50 p-3 rounded-xl outline-none border border-gray-200 text-sm font-bold text-jp-dark focus:bg-white focus:border-jp-mustard transition-colors" placeholder="景點名稱">
             </div>
 
-            <div>
-              <label class="text-xs font-bold text-gray-500 block mb-1">簡介 (Description)</label>
-              <textarea v-model="analyzedData.desc" rows="4" class="w-full bg-gray-50 p-3 rounded-xl outline-none border border-gray-200 text-sm resize-none focus:bg-white focus:border-jp-mustard transition-colors"></textarea>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 block mb-1">地點 (Location)</label>
+                    <input v-model="analyzedData.location.name" class="w-full bg-gray-50 p-3 rounded-xl outline-none border border-gray-200 text-sm focus:bg-white focus:border-jp-mustard transition-colors" placeholder="e.g. 東京">
+                </div>
+                 <div>
+                    <label class="text-xs font-bold text-gray-500 block mb-1">狀態 (Status)</label>
+                    <select v-model="analyzedData.status" class="w-full bg-gray-50 p-3 rounded-xl outline-none border border-gray-200 text-sm focus:bg-white focus:border-jp-mustard transition-colors">
+                        <option value="want_to_go">想去</option>
+                        <option value="planned">已排程</option>
+                        <option value="visited">已去過</option>
+                    </select>
+                </div>
             </div>
 
             <div>
-              <label class="text-xs font-bold text-gray-500 block mb-1">標籤 (Tags, comma separated)</label>
+              <label class="text-xs font-bold text-gray-500 block mb-1">簡介 (Description)</label>
+              <textarea v-model="analyzedData.desc" rows="3" class="w-full bg-gray-50 p-3 rounded-xl outline-none border border-gray-200 text-sm resize-none focus:bg-white focus:border-jp-mustard transition-colors"></textarea>
+            </div>
+
+            <div>
+              <label class="text-xs font-bold text-gray-500 block mb-1">個人筆記 (User Notes)</label>
+              <textarea v-model="analyzedData.user_notes" rows="2" class="w-full bg-yellow-50 p-3 rounded-xl outline-none border border-yellow-200 text-sm resize-none focus:bg-white focus:border-jp-mustard transition-colors" placeholder="為什麼想去？"></textarea>
+            </div>
+
+            <div>
+              <label class="text-xs font-bold text-gray-500 block mb-1">標籤 (Tags)</label>
               <input v-model="tagsInput" class="w-full bg-gray-50 p-3 rounded-xl outline-none border border-gray-200 text-sm focus:bg-white focus:border-jp-mustard transition-colors" placeholder="標籤1, 標籤2">
             </div>
 
             <div>
-              <label class="text-xs font-bold text-gray-500 block mb-1">必看重點 (Highlights, one per line)</label>
-              <textarea v-model="highlightsInput" rows="4" class="w-full bg-gray-50 p-3 rounded-xl outline-none border border-gray-200 text-sm resize-none focus:bg-white focus:border-jp-mustard transition-colors" placeholder="重點1&#10;重點2&#10;重點3"></textarea>
+              <label class="text-xs font-bold text-gray-500 block mb-1">必看重點 (Highlights)</label>
+              <textarea v-model="highlightsInput" rows="3" class="w-full bg-gray-50 p-3 rounded-xl outline-none border border-gray-200 text-sm resize-none focus:bg-white focus:border-jp-mustard transition-colors" placeholder="重點1&#10;重點2"></textarea>
             </div>
 
             <div>
               <label class="text-xs font-bold text-gray-500 block mb-1">參觀小撇步 (Tips)</label>
-              <textarea v-model="analyzedData.tips" rows="3" class="w-full bg-gray-50 p-3 rounded-xl outline-none border border-gray-200 text-sm resize-none focus:bg-white focus:border-jp-mustard transition-colors"></textarea>
+              <textarea v-model="analyzedData.tips" rows="2" class="w-full bg-gray-50 p-3 rounded-xl outline-none border border-gray-200 text-sm resize-none focus:bg-white focus:border-jp-mustard transition-colors"></textarea>
             </div>
 
              <div>
@@ -154,10 +183,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
-import { useTripStore } from '../stores/trip'
+import { ref, reactive, watch, toRef } from 'vue'
+import { useTripStore } from '../stores/trip.ts'
 import { generateGuideFromContent } from '../services/aiService'
-import type { Guide } from '../stores/trip'
+import type { Guide } from '../stores/trip.ts'
+import { useDynamicZIndex } from '../composables/useZIndex'
 
 const PRESET_COLORS = [
   'from-pink-500 to-red-600',
@@ -188,6 +218,8 @@ const props = defineProps<{
   isOpen: boolean
   initialData?: { title?: string, text?: string, url?: string }
 }>()
+
+const { zIndex } = useDynamicZIndex(toRef(props, 'isOpen'))
 
 const emit = defineEmits(['close', 'save'])
 
@@ -236,15 +268,20 @@ watch(analyzedData, (newData) => {
 const analyze = async () => {
   if (!form.url && !form.text) return
   
+  const apiKey = store.settings.aiSettings?.apiKey
+  if (!apiKey) {
+    error.value = '請先設定 Google AI Studio API Key 才能使用此功能。'
+    return
+  }
+
   isLoading.value = true
   error.value = ''
   
   try {
-    const apiKey = store.settings.aiSettings?.apiKey
     const model = store.settings.aiSettings?.model
     
     // Call AI Service
-    const result = await generateGuideFromContent(apiKey || '', model || '', form.text, form.url)
+    const result = await generateGuideFromContent(apiKey, model || '', form.text, form.url)
     
     analyzedData.value = result as Guide & { title: string }
     

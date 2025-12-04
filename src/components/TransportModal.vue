@@ -1,6 +1,6 @@
 <template>
   <transition name="slide-up">
-    <div v-if="isOpen && transportData" class="fixed inset-0 z-[100] flex items-end justify-center pointer-events-none">
+    <div v-if="isOpen && transportData" class="fixed inset-0 flex items-end justify-center pointer-events-none" :style="{ zIndex }">
       <div class="absolute inset-0 bg-black/30 pointer-events-auto transition-opacity" @click="emit('close')"></div>
       <div class="bg-white w-full max-w-md rounded-t-3xl p-6 pointer-events-auto transform transition-transform shadow-2xl relative z-50 modal-body flex flex-col max-h-[90vh]">
         <div class="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6 shrink-0"></div>
@@ -114,14 +114,17 @@ import type { Transport, TransportPass } from '../stores/trip.ts'
 import { useTripStore } from '../stores/trip.ts'
 import { formatTime } from '../utils/time.ts'
 import PassDisplayModal from './PassDisplayModal.vue'
-import { ref } from 'vue'
+import { ref, toRef } from 'vue'
+import { useDynamicZIndex } from '../composables/useZIndex'
 
 const store = useTripStore()
 
-defineProps<{
+const props = defineProps<{
   isOpen: boolean
   transportData: { transports: Transport[], time: string } | null
 }>()
+
+const { zIndex } = useDynamicZIndex(toRef(props, 'isOpen'))
 
 const emit = defineEmits(['close', 'edit'])
 

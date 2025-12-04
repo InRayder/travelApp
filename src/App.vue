@@ -1,15 +1,16 @@
 <template>
   <div class="h-[100dvh] flex flex-col relative overflow-hidden text-jp-dark font-sans bg-pattern-seigaiha">
-    <AppHeader @open-settings="settingsOpen = true" />
+    <AppHeader @open-settings="store.setSettingsOpen(true)" />
     <div class="flex-1 overflow-hidden relative"> <!-- 內距由視圖處理 (Padding handled by views) -->
       <RouterView />
     </div>
     <BottomNav />
-    <SettingsModal :isOpen="settingsOpen" @close="settingsOpen = false" />
+    <SettingsModal :isOpen="store.isSettingsOpen" @close="store.setSettingsOpen(false)" />
     <AiAssistantModal 
     v-if="store.settings.aiSettings?.apiKey"
     :isOpen="aiAssistantOpen"
     @close="aiAssistantOpen = false"
+    @open-settings="store.setSettingsOpen(true)"
   />
     
     <!-- AI Assistant FAB -->
@@ -41,7 +42,6 @@ import OnboardingModal from './components/OnboardingModal.vue'
 
 import { SpeedInsights } from "@vercel/speed-insights/vue"
 
-const settingsOpen = ref(false)
 const aiAssistantOpen = ref(false)
 const store = useTripStore()
 

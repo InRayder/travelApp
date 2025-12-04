@@ -71,7 +71,7 @@
               <!-- Content Column (Transport) -->
               <div class="flex-1 pr-4 min-w-0">
                 <TransportConnector 
-                  :item="item"
+                  :current-event="item"
                   :index="idx"
                   @open-transport="openTransport"
                   @add-transport="(item: Event, idx: number) => openEditModal(item, idx, true)"
@@ -106,6 +106,7 @@
                 <EventCard 
                   :item="item" 
                   :index="idx"
+                  :class="{ 'ring-2 ring-red-500 ring-offset-2 rounded-xl': store.eventConflictIds.includes(item.id || '') }"
                   @click-edit="openEditModal"
                   @open-guide="openGuide"
                   @open-expense="openExpense"
@@ -563,6 +564,7 @@ const handleDragEnd = (evt: any) => {
     }
   }
 
+  store.validateConflicts(currentDayIndex.value)
   store.saveData()
 }
 
@@ -712,6 +714,7 @@ const handleInsertFromBackup = (idx: number) => {
  */
 const saveEdit = (data: Event) => {
   const newItem = { ...data } // Ensure we're working with a copy
+  if (!newItem.id) newItem.id = crypto.randomUUID()
   if (isAdding.value) {
     if (isAddingBackup.value) {
       store.backups.push(newItem)
@@ -745,6 +748,7 @@ const saveEdit = (data: Event) => {
   }
 
   currentDay.value.events.sort((a, b) => a.time.localeCompare(b.time))
+  store.validateConflicts(currentDayIndex.value)
   store.saveData()
   editModalOpen.value = false
 }

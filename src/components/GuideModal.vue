@@ -1,6 +1,6 @@
 <template>
   <transition name="slide-up">
-    <div v-if="isOpen && guide" class="fixed inset-0 z-[10001] flex items-end justify-center pointer-events-none">
+    <div v-if="isOpen && guide" class="fixed inset-0 flex items-end justify-center pointer-events-none" :style="{ zIndex }">
       <div class="absolute inset-0 bg-black/40 pointer-events-auto transition-opacity backdrop-blur-sm" @click="closeModal"></div>
       <div class="bg-white w-full max-w-md h-[92vh] rounded-t-3xl pointer-events-auto shadow-2xl flex flex-col relative z-[100] overflow-hidden">
         
@@ -8,7 +8,7 @@
         <div class="h-48 relative shrink-0 overflow-hidden group">
           <div class="absolute inset-0 bg-gradient-to-br transition-all duration-500" :class="displayData.color"></div>
           <!-- Background Image -->
-          <div v-if="displayData.image" class="absolute inset-0 bg-cover bg-center transition-opacity duration-500 z-0" :style="{ backgroundImage: `url('${displayData.image}')` }">
+          <div v-if="displayData.thumbnail_url" class="absolute inset-0 bg-cover bg-center transition-opacity duration-500 z-0" :style="{ backgroundImage: `url('${displayData.thumbnail_url}')` }">
             <div class="absolute inset-0 bg-black/30"></div>
           </div>
 
@@ -31,12 +31,25 @@
               <span v-for="tag in displayData.tags" :key="tag" class="text-[10px] bg-white/20 text-white backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20">#{{ tag }}</span>
             </div>
             <h2 class="text-3xl font-black text-white tracking-wide shadow-black drop-shadow-md">{{ guide.title }}</h2>
+             <div v-if="displayData.location?.name" class="flex items-center text-white/80 text-xs mt-1">
+                <font-awesome-icon icon="fa-solid fa-location-dot" class="mr-1" />
+                {{ displayData.location.name }}
+            </div>
           </div>
         </div>
 
         <!-- 內容 (Content) - View Mode -->
         <div v-if="!isEditing" class="flex-1 overflow-y-auto p-6 bg-white relative">
           <div class="prose prose-sm max-w-none text-gray-600 mb-8 leading-relaxed whitespace-pre-wrap">{{ displayData.desc }}</div>
+
+           <!-- User Notes -->
+           <div v-if="displayData.user_notes" class="bg-yellow-50 p-4 rounded-xl border border-yellow-100 mb-8">
+                <h4 class="text-xs font-bold text-yellow-600 mb-1 flex items-center gap-1">
+                    <font-awesome-icon icon="fa-solid fa-note-sticky" />
+                    個人筆記
+                </h4>
+                <p class="text-sm text-gray-700 leading-relaxed">{{ displayData.user_notes }}</p>
+           </div>
 
           <!-- 必做事項 (Must Do) -->
           <div class="mb-8">
@@ -59,7 +72,7 @@
           </div>
 
           <!-- 外部連結 (External Link) -->
-          <a v-if="displayData.link" :href="displayData.link" target="_blank" class="block w-full py-4 bg-gray-900 text-white text-center rounded-xl font-bold shadow-lg shadow-gray-200 hover:bg-gray-800 transition-colors">
+          <a v-if="displayData.original_url" :href="displayData.original_url" target="_blank" class="block w-full py-4 bg-gray-900 text-white text-center rounded-xl font-bold shadow-lg shadow-gray-200 hover:bg-gray-800 transition-colors">
             <font-awesome-icon icon="fa-solid fa-globe" class="mr-2" /> 訪問官方網站 / 更多資訊
           </a>
           <div class="h-8"></div>
@@ -72,9 +85,24 @@
             <input v-model="editForm.title" class="w-full bg-white p-3 rounded-xl outline-none border border-gray-200 text-sm font-bold text-jp-dark" placeholder="景點名稱">
           </div>
 
+           <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 block mb-1">地點 (Location)</label>
+                    <input v-model="editForm.location.name" class="w-full bg-white p-3 rounded-xl outline-none border border-gray-200 text-sm" placeholder="e.g. 東京">
+                </div>
+                 <div>
+                    <label class="text-xs font-bold text-gray-500 block mb-1">狀態 (Status)</label>
+                    <select v-model="editForm.status" class="w-full bg-white p-3 rounded-xl outline-none border border-gray-200 text-sm">
+                        <option value="want_to_go">想去</option>
+                        <option value="planned">已排程</option>
+                        <option value="visited">已去過</option>
+                    </select>
+                </div>
+            </div>
+
           <div>
             <label class="text-xs font-bold text-gray-500 block mb-1">背景圖片連結 (Image URL)</label>
-            <input v-model="editForm.image" class="w-full bg-white p-3 rounded-xl outline-none border border-gray-200 text-sm" placeholder="https://...">
+            <input v-model="editForm.thumbnail_url" class="w-full bg-white p-3 rounded-xl outline-none border border-gray-200 text-sm" placeholder="https://...">
             <div class="mt-2 text-[10px] text-gray-400 flex gap-2">
               <span>推薦資源:</span>
               <a href="https://unsplash.com/" target="_blank" class="text-blue-500 hover:underline">Unsplash</a>
@@ -87,6 +115,11 @@
             <label class="text-xs font-bold text-gray-500 block mb-1">簡介 (Description)</label>
             <textarea v-model="editForm.desc" rows="4" class="w-full bg-white p-3 rounded-xl outline-none border border-gray-200 text-sm resize-none"></textarea>
           </div>
+
+          <div>
+             <label class="text-xs font-bold text-gray-500 block mb-1">個人筆記 (User Notes)</label>
+             <textarea v-model="editForm.user_notes" rows="2" class="w-full bg-white p-3 rounded-xl outline-none border border-gray-200 text-sm resize-none" placeholder="為什麼想去？"></textarea>
+           </div>
 
           <div>
             <label class="text-xs font-bold text-gray-500 block mb-1">標籤 (Tags, comma separated)</label>
@@ -105,7 +138,7 @@
 
           <div>
             <label class="text-xs font-bold text-gray-500 block mb-1">相關連結 (Link)</label>
-            <input v-model="editForm.link" class="w-full bg-white p-3 rounded-xl outline-none border border-gray-200 text-sm" placeholder="https://...">
+            <input v-model="editForm.original_url" class="w-full bg-white p-3 rounded-xl outline-none border border-gray-200 text-sm" placeholder="https://...">
           </div>
           
           <div>
@@ -153,8 +186,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, toRef } from 'vue'
 import type { Guide } from '../stores/trip.ts'
+import { useDynamicZIndex } from '../composables/useZIndex'
+
+const props = defineProps<{
+  isOpen: boolean
+  guide: { title: string, data: Guide } | null
+  initialEditMode?: boolean
+}>()
+
+const { zIndex } = useDynamicZIndex(toRef(props, 'isOpen'))
+
+const emit = defineEmits(['close', 'save'])
 
 const PRESET_COLORS = [
   'from-pink-500 to-red-600',
@@ -172,34 +216,32 @@ const PRESET_COLORS = [
 ]
 
 const PRESET_ICONS = [
-  'fa-solid fa-torii-gate', 'fa-solid fa-archway', 'fa-solid fa-gopuram', 'fa-solid fa-landmark',
-  'fa-solid fa-mountain-sun', 'fa-solid fa-water', 'fa-solid fa-tree', 'fa-solid fa-leaf',
-  'fa-solid fa-umbrella-beach', 'fa-solid fa-ship', 'fa-solid fa-train-subway', 'fa-solid fa-plane',
-  'fa-solid fa-utensils', 'fa-solid fa-bowl-food', 'fa-solid fa-mug-hot', 'fa-solid fa-beer-mug-empty',
-  'fa-solid fa-bag-shopping', 'fa-solid fa-gift', 'fa-solid fa-store', 'fa-solid fa-cart-shopping',
-  'fa-solid fa-camera', 'fa-solid fa-ticket', 'fa-solid fa-masks-theater', 'fa-solid fa-palette',
-  'fa-solid fa-bed', 'fa-solid fa-hot-tub-person', 'fa-solid fa-person-walking', 'fa-solid fa-bicycle'
+  'fa-solid fa-map-location-dot',
+  'fa-solid fa-utensils',
+  'fa-solid fa-camera',
+  'fa-solid fa-bag-shopping',
+  'fa-solid fa-hotel',
+  'fa-solid fa-train',
+  'fa-solid fa-mountain-sun',
+  'fa-solid fa-landmark'
 ]
-
-const props = defineProps<{
-  isOpen: boolean
-  guide: { title: string, data: Guide } | null
-  initialEditMode?: boolean
-}>()
-
-const emit = defineEmits(['close', 'save'])
 
 const isEditing = ref(false)
 const editForm = ref<Guide & { title: string }>({
+  id: '',
   title: '',
   color: '',
   icon: '',
   desc: '',
-  tags: [],
-  highlights: [],
+  tags: [] as string[],
+  highlights: [] as string[],
   tips: '',
-  link: '',
-  image: ''
+  original_url: '',
+  thumbnail_url: '',
+  media_type: 'web',
+  location: { name: '' },
+  user_notes: '',
+  status: 'want_to_go'
 })
 
 const tagsInput = ref('')
@@ -208,14 +250,19 @@ const highlightsInput = ref('')
 const displayData = computed(() => {
   if (isEditing.value) return editForm.value
   return props.guide?.data || {
+    id: '',
     color: '',
     icon: '',
     tags: [],
     desc: '',
     highlights: [],
     tips: '',
-    link: '',
-    image: ''
+    original_url: '',
+    thumbnail_url: '',
+    media_type: 'web',
+    location: { name: '' },
+    user_notes: '',
+    status: 'want_to_go'
   }
 })
 

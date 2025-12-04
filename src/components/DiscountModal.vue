@@ -1,6 +1,6 @@
 <template>
   <transition name="slide-up">
-    <div v-if="isOpen" class="fixed inset-0 z-[100] flex items-end justify-center pointer-events-none">
+    <div v-if="isOpen" class="fixed inset-0 flex items-end justify-center pointer-events-none" :style="{ zIndex }">
       <div class="absolute inset-0 bg-black/30 pointer-events-auto transition-opacity" @click="emit('close')"></div>
       <div class="bg-white rounded-2xl w-[90%] max-w-sm p-6 shadow-2xl transform transition-all relative overflow-hidden pointer-events-auto">
         <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-400 to-pink-500"></div>
@@ -34,10 +34,15 @@
 
 <script setup lang="ts">
 
-defineProps<{
+import { toRef } from 'vue'
+import { useDynamicZIndex } from '../composables/useZIndex'
+
+const props = defineProps<{
   isOpen: boolean
   discounts: { name: string; url: string }[] | undefined
 }>()
+
+const { zIndex } = useDynamicZIndex(toRef(props, 'isOpen'))
 
 const emit = defineEmits(['close'])
 </script>

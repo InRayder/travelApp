@@ -1,6 +1,6 @@
 <template>
   <transition name="fade">
-    <div v-if="isOpen" class="fixed inset-0 z-[300] flex items-center justify-center p-4">
+    <div v-if="isOpen" class="fixed inset-0 flex items-center justify-center p-4" :style="{ zIndex }">
       <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
       
       <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative z-10 flex flex-col min-h-[500px]">
@@ -172,12 +172,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, toRef } from 'vue'
 import { useTripStore } from '../stores/trip'
+import { useDynamicZIndex } from '../composables/useZIndex'
 
-defineProps<{
+const props = defineProps<{
   isOpen: boolean
 }>()
+
+const { zIndex } = useDynamicZIndex(toRef(props, 'isOpen'))
 
 const emit = defineEmits(['close'])
 const store = useTripStore()

@@ -1,16 +1,26 @@
 import { defineStore } from 'pinia'
+import { validateDaySchedule } from '../utils/TimeAdjustmentUtil'
 
 const STORAGE_KEY = 'easy_trip_data_v7'
 
 export interface Guide {
-    color: string;      // 推薦顏色 (Tailwind class, e.g. "from-pink-500 to-red-600")
-    icon: string;       // 圖示 (FontAwesome class, e.g. "fa-solid fa-torii-gate")
+    id: string;         // Unique identifier
+    color: string;      // 推薦顏色 (Tailwind class)
+    icon: string;       // 圖示 (FontAwesome class)
     desc: string;       // 景點簡介
-    tags: string[];     // 標籤 (e.g. "學問之神", "梅枝餅")
+    tags: string[];     // 標籤
     highlights: string[]; // 必看重點
     tips: string;       // 參觀小撇步
-    link: string;       // 官方網站或相關連結
-    image?: string;     // 背景圖片連結 (Optional)
+    original_url: string; // 原始連結 (was link)
+    thumbnail_url?: string; // 封面圖片連結 (was image)
+    media_type: 'instagram' | 'youtube' | 'web'; // 媒體類型
+    location: {         // 地理位置
+        name: string;
+        coordinates?: [number, number];
+        google_maps_id?: string;
+    };
+    user_notes: string; // 個人化筆記
+    status: 'want_to_go' | 'planned' | 'visited'; // 狀態
 }
 
 export interface TransportPass {
@@ -20,130 +30,101 @@ export interface TransportPass {
 }
 
 export interface TransportSchedule {
-    dep: string;        // 出發時間 (HH:MM)
-    arr?: string;       // 抵達時間 (HH:MM)
-    note?: string;      // 備註
+    dep: string;
+    arr?: string;
+    note?: string;
 }
 
 export interface Transport {
-    type: 'walk' | 'public' | 'express' | 'ferry' | 'taxi' | 'drive' | 'flight'; // 交通類型
-    // Common (通用)
-    dep?: string;       // 出發時間 (HH:MM)
-    arr?: string;       // 抵達時間 (HH:MM)
-    cost?: number;      // 費用
-    duration?: number;  // 時間長度 (分鐘)
-    direction?: string; // 開往方向 (e.g. 往新宿)
-
-    // Public (Bus/Subway - 公車/地鐵)
-    line?: string;      // 路線 (e.g. 機場線, 50號公車)
-
-    // Express (Shinkansen/Train - 新幹線/特急)
-    trainNumber?: string; // 班次 (e.g. 回聲號 855)
-    car?: string;         // 車廂/座位 (e.g. 自由席, 5號車 3A)
-    platform?: string;    // 月台
-
-    // Flight (飛機)
-    flightNo?: string;    // 航班編號 (e.g. IT240)
-    depAirport?: string;  // 出發機場 (e.g. TPE)
-    arrAirport?: string;  // 抵達機場 (e.g. FUK)
-
-    // Ferry / Taxi / Drive / Public / Flight (船/計程車/自駕/大眾運輸/飛機)
-    company?: string;     // 營運公司 / 船公司 / 計程車行 / 租車公司 / 航空公司
-
-    // Schedules (Express & Ferry - 前後班次)
-    schedules?: TransportSchedule[]; // Max 5 sets of prev/next info
-
-    note?: string; // 通用備註
-    passId?: string; // 使用的交通票券 ID
+    type: 'walk' | 'public' | 'express' | 'ferry' | 'taxi' | 'drive' | 'flight';
+    dep?: string;
+    arr?: string;
+    cost?: number;
+    direction?: string;
+    note?: string;
+    line?: string;
+    trainNumber?: string;
+    car?: string;
+    platform?: string;
+    flightNo?: string;
+    depAirport?: string;
+    arrAirport?: string;
+    company?: string;
+    schedules?: TransportSchedule[];
+    passId?: string;
+    duration?: number;
 }
 
 export interface Event {
-    id?: string;        // 事件 ID (UUID)
-    title: string;      // 標題
-    location: string;   // 地點
-    category: string;   // 類別 (fun, food, shop, stay, transport, flight)
-    time: string;       // 開始時間 (HH:MM)
-    endTime?: string;   // 結束時間 (HH:MM)
-    notes?: string;     // 備註
-    cost: number;       // 預估費用
-    currency?: string;  // 幣別 (預設 JPY)
-    lat?: number;       // 緯度 (use mapUrl)
-    lng?: number;       // 經度 (use mapUrl)
-    mapUrl?: string;    // Google Maps 連結
-    link?: string;      // 相關連結 (e.g. Tabelog)
-    ticketLink?: string; // 購票連結 (e.g. Klook)
-    bookingLink?: string; // 訂房連結 (e.g. Booking.com)
-    transports?: Transport[]; // 交通資訊 (前往目的地的交通資訊，支援多段轉乘)
-    stayInfo?: {        // 住宿資訊 (僅當 category 為 'stay' 時)
-        startDate: string; // 入住日期
-        endDate: string;   // 退房日期
-        checkIn: string;   // Check-in 時間
-        checkOut: string;  // Check-out 時間
-        notes: string;     // 住宿備註
+    id?: string;
+    title: string;
+    location: string;
+    lat?: number;
+    lng?: number;
+    mapUrl?: string;
+    category: 'fun' | 'food' | 'shop' | 'stay' | 'transport' | 'flight';
+    time: string;
+    endTime?: string;
+    duration?: number;
+    cost: number;
+    currency?: string;
+    notes?: string;
+    link?: string;
+    linkedGuide?: string;
+    transports?: Transport[];
+    bookingLink?: string;
+    stayInfo?: {
+        startDate: string;
+        endDate: string;
+        checkIn: string;
+        checkOut: string;
+        notes: string;
     };
-    discounts?: { name: string; url: string }[]; // 優惠券列表
-    linkedGuide?: string; // 關聯的導覽 ID (Key of attractionGuides)
-    duration?: number;    // 持續時間 (分鐘, 用於 UI 計算)
+    discounts?: { name: string; url: string }[];
+    ticketLink?: string;
 }
 
 export interface Day {
-    dateStr: string;    // 日期字串 (e.g. "9/10 (Tue)")
-    events: Event[];    // 當日行程列表
+    dateStr: string;
+    events: Event[];
+    backups?: Event[]; // Legacy support
 }
 
-
 export interface Expense {
-    id?: string;        // 支出 ID
-    title: string;      // 項目名稱
-    amount: number;     // 金額
-    category: string;   // 類別 (food, transport, shop, etc.)
-    payer: string;      // 付款人
-    splitMethod: string; // 分帳方式 (equal, custom, exact)
-    involved: string[]; // 參與分帳的人
-    customShares: Record<string, number>; // 自訂分帳比例/金額
-    date: string;       // 日期
-    currency?: string;  // 幣別
+    id: string;
+    title: string;
+    amount: number;
+    currency: string;
+    category: string;
+    date: string;
+    payer: string;
+    split: string[];
+    splitMethod?: 'equal' | 'exact' | 'percent' | 'shares' | 'adjustment' | 'average' | 'custom';
+    involved?: string[];
+    customShares?: Record<string, number>;
 }
 
 export interface Currency {
-    symbol: string;     // 貨幣符號 (e.g. "¥")
-    rate: number;       // 匯率 (相對於基準貨幣 JPY)
-    name: string;       // 貨幣名稱
+    name: string;
+    symbol: string;
+    rate: number;
 }
 
 export interface Settings {
-    currency: string;   // 預設顯示幣別
-    timeFormat?: '12h' | '24h'; // 時間格式 (12h/24h)
-    voiceURI?: string; // 語音設定
-    aiSettings?: {
+    currency: string;
+    timeFormat: '12h' | '24h';
+    voiceURI: string;
+    aiSettings: {
         apiKey: string;
-        model: string; // 'gemini-2.5-flash' | 'gemini-1.5-pro'
-        customPrompt?: string; // 使用者自訂提示詞 (e.g. "少走路", "優先搭地鐵")
+        model: string;
+        customPrompt?: string;
     };
 }
 
 export interface Category {
-    id: string;         // 類別 ID
-    name: string;       // 類別名稱
-    icon: string;       // 類別圖示
-}
-
-export interface TripState {
-    days: Day[];        // 每日行程資料
-    backups: Event[];   // 備案列表
-    expenses: Expense[]; // 支出紀錄
-    travelers: string[]; // 旅伴列表
-    attractionGuides: Record<string, Guide>; // 景點深度導覽資料
-    settings: Settings; // 設定
-    categories: Category[]; // 類別定義
-    passes: TransportPass[]; // 交通票券列表
-    title: string;      // 行程標題
-    startDate: string;  // 開始日期 (YYYY-MM-DD)
-    headerCollapsed: boolean; // 標題列是否收合
-    currencies: Record<string, Currency>; // 匯率設定
-    isOnboardingOpen: boolean; // 是否顯示導覽
-    installPromptEvent: any; // Store the beforeinstallprompt event
-    checklists: ChecklistCategory[];
+    id: string;
+    name: string;
+    icon: string;
 }
 
 export interface ChecklistItem {
@@ -158,8 +139,31 @@ export interface ChecklistCategory {
     items: ChecklistItem[];
 }
 
+export interface TripState {
+    title: string;
+    startDate: string;
+    settings: Settings;
+    travelers: string[];
+    days: Day[];
+    backups: Event[];
+    expenses: Expense[];
+    passes: TransportPass[];
+    currencies: Record<string, Currency>;
+    attractionGuides: Record<string, Guide>;
+    isOnboardingOpen: boolean;
+    categories: Category[];
+    headerCollapsed: boolean;
+    installPromptEvent: any;
+    checklists: ChecklistCategory[];
+    isSettingsOpen: boolean;
+    settingsTab: string;
+    transportConflictIds: string[];
+    eventConflictIds: string[];
+}
+
 const DEFAULT_GUIDES: Record<string, Guide> = {
     '太宰府': {
+        id: 'guide_dazaifu',
         color: 'from-pink-500 to-red-600',
         icon: 'fa-solid fa-torii-gate',
         desc: '祭祀學問之神菅原道真的總本宮，也是福岡最具代表性的神社。參道兩旁梅枝餅店家林立，是必吃的散步美食。這裡也以「飛梅傳說」與隈研吾設計的星巴克聞名。',
@@ -170,9 +174,14 @@ const DEFAULT_GUIDES: Record<string, Guide> = {
             '星巴克表參道店：由隈研吾設計的木造建築'
         ],
         tips: '建議早上10點前抵達以避開團客。梅枝餅推薦「Kasanoya (かさの家)」與「寺田屋」。',
-        link: 'https://www.dazaifutenmangu.or.jp/'
+        original_url: 'https://www.dazaifutenmangu.or.jp/',
+        media_type: 'web',
+        location: { name: '福岡・太宰府' },
+        user_notes: '必吃梅枝餅！',
+        status: 'want_to_go'
     },
     '一蘭': {
+        id: 'guide_ichiran',
         color: 'from-red-600 to-red-800',
         icon: 'fa-solid fa-bowl-food',
         desc: '發源於福岡的天然豚骨拉麵，中洲總本店是整棟的「一蘭大樓」。二樓是知名的「味集中座位」，一樓則是呈現昭和復古風格的「屋台」店舖。',
@@ -183,9 +192,14 @@ const DEFAULT_GUIDES: Record<string, Guide> = {
             '洗手間的驚喜：掛滿衛生紙的牆面'
         ],
         tips: '總本店通常排隊很長，若想避開人潮可選擇深夜或清晨前往（24小時營業）。',
-        link: 'https://ichiran.com/shop/kyushu/souhon/'
+        original_url: 'https://ichiran.com/shop/kyushu/souhon/',
+        media_type: 'web',
+        location: { name: '福岡・中洲' },
+        user_notes: '半夜去吃不用排隊',
+        status: 'want_to_go'
     },
     '門司港': {
+        id: 'guide_mojiko',
         color: 'from-yellow-600 to-orange-600',
         icon: 'fa-solid fa-ship',
         desc: '保留了明治至大正時期的西洋建築，充滿懷舊浪漫氛圍。這裡是日本「燒咖哩」的發源地，還可以搭船前往對岸的山口縣下關唐戶市場。',
@@ -196,9 +210,14 @@ const DEFAULT_GUIDES: Record<string, Guide> = {
             '必吃燒咖哩：濃郁起司烤咖哩'
         ],
         tips: '建議購買「四葉草套票」可同時遊覽門司港與唐戶市場。與著名的「香蕉人像」合照是觀光客必做清單！',
-        link: 'https://www.mojiko.info/'
+        original_url: 'https://www.mojiko.info/',
+        media_type: 'web',
+        location: { name: '北九州・門司港' },
+        user_notes: '要吃燒咖哩',
+        status: 'planned'
     },
     '唐戶': {
+        id: 'guide_karato',
         color: 'from-blue-500 to-blue-700',
         icon: 'fa-solid fa-fish',
         desc: '位於下關的唐戶市場是河豚的集散地。每逢週末與假日，市場內會舉辦「活力馬關街」，各家漁鋪會販售新鮮的握壽司，便宜又大碗。',
@@ -209,9 +228,14 @@ const DEFAULT_GUIDES: Record<string, Guide> = {
             '關門海峽景色：坐在海邊吃壽司'
         ],
         tips: '市集僅在週五、六、日及國定假日舉辦。建議中午前抵達以免熱門品項售完。',
-        link: 'https://www.karatoichiba.com/'
+        original_url: 'https://www.karatoichiba.com/',
+        media_type: 'web',
+        location: { name: '山口・下關' },
+        user_notes: '週末才有壽司市集',
+        status: 'planned'
     },
     '屋台': {
+        id: 'guide_yatai',
         color: 'from-purple-600 to-indigo-800',
         icon: 'fa-solid fa-beer-mug-empty',
         desc: '福岡獨有的屋台（路邊攤）文化，集中在中洲、天神與長濱地區。在小小的攤位裡與老闆和其他客人聊天，是體驗福岡人情味的最佳方式。',
@@ -222,9 +246,14 @@ const DEFAULT_GUIDES: Record<string, Guide> = {
             '體驗在地人情味'
         ],
         tips: '1. 先確認價格再點餐。 2. 只有一人的話盡量坐緊一點。 3. 不要長坐，吃完即走是禮貌。 4. 部分店家不收信用卡，請準備現金。',
-        link: ''
+        original_url: '',
+        media_type: 'web',
+        location: { name: '福岡・中洲/天神' },
+        user_notes: '記得帶現金',
+        status: 'want_to_go'
     },
     'LaLaport': {
+        id: 'guide_lalaport',
         color: 'from-blue-400 to-indigo-500',
         icon: 'fa-solid fa-robot',
         desc: '2022年新開幕的大型購物中心，最大看點是入口處高達24.8公尺的實物大「ν鋼彈」立像，這是九州首次設置鋼彈立像。',
@@ -235,9 +264,14 @@ const DEFAULT_GUIDES: Record<string, Guide> = {
             '九州美食街：集結福岡名店'
         ],
         tips: '鋼彈聲光秀通常在白天每小時整點進行，晚上則有特別影像演出。',
-        link: 'https://mitsui-shopping-park.com/lalaport/fukuoka/'
+        original_url: 'https://mitsui-shopping-park.com/lalaport/fukuoka/',
+        media_type: 'web',
+        location: { name: '福岡・博多' },
+        user_notes: '看鋼彈',
+        status: 'visited'
     },
     '海之中道': {
+        id: 'guide_uminonakamichi',
         color: 'from-green-500 to-teal-600',
         icon: 'fa-solid fa-tree',
         desc: '位於博多灣北側的巨大國營公園，四季都有不同的花海（粉蝶花、波斯菊等）。園內設有動物之森，可以近距離接觸水豚與袋鼠。',
@@ -248,9 +282,14 @@ const DEFAULT_GUIDES: Record<string, Guide> = {
             '花之丘：整片絕美花海'
         ],
         tips: '園區非常大，強烈建議租借腳踏車。旁邊就是「海洋世界海之中道」水族館，可安排一日遊。',
-        link: 'https://uminaka-park.jp/'
+        original_url: 'https://uminaka-park.jp/',
+        media_type: 'web',
+        location: { name: '福岡・海之中道' },
+        user_notes: '租腳踏車',
+        status: 'want_to_go'
     },
     '天神': {
+        id: 'guide_tenjin',
         color: 'from-gray-700 to-gray-900',
         icon: 'fa-solid fa-bag-shopping',
         desc: '九州最大的繁華街，百貨公司林立。全長約600公尺的「天神地下街」以19世紀歐洲風格設計，連接各大百貨與地鐵站，是雨天購物的最佳去處。',
@@ -261,7 +300,29 @@ const DEFAULT_GUIDES: Record<string, Guide> = {
             '大丸/三越：老牌百貨'
         ],
         tips: '地下街錯綜複雜，建議下載地圖。每逢1號有「天神日」促銷。',
-        link: 'https://www.tenchika.com/'
+        original_url: 'https://www.tenchika.com/',
+        media_type: 'web',
+        location: { name: '福岡・天神' },
+        user_notes: '逛街',
+        status: 'want_to_go'
+    },
+    'AI 智能匯入教學': {
+        id: 'guide_ai_tutorial',
+        color: 'from-violet-500 to-fuchsia-600',
+        icon: 'fa-solid fa-wand-magic-sparkles',
+        desc: '這是一個強大的 AI 助手功能，可以幫您將 Instagram 貼文、部落格文章或任何旅遊資訊，一鍵轉換成精美的旅遊卡片！',
+        tags: ['AI助手', '自動匯入', '省時神器'],
+        highlights: [
+            '複製貼上：支援 IG 貼文內容或網誌文字',
+            '自動分析：AI 會自動抓取地點、重點與建議',
+            '一鍵生成：馬上建立專屬的旅遊卡片'
+        ],
+        tips: '1. 點擊上方的「AI 智能匯入」按鈕。\n2. 貼上您看到的旅遊資訊文字。\n3. 按下「開始分析」，AI 就會幫您整理好囉！',
+        original_url: '',
+        media_type: 'web',
+        location: { name: 'Easy Trip AI' },
+        user_notes: '試試看用 AI 幫我整理行程！',
+        status: 'planned'
     }
 }
 
@@ -270,7 +331,9 @@ const DEFAULT_DATA: Partial<TripState> = {
     startDate: '2025-09-10',
     travelers: ['我', '旅伴'],
     expenses: [],
-    passes: [],
+    passes: [
+        { id: 'pass_jr_kyushu', name: 'JR 九州鐵路周遊券 (北九州 3日)', imageUrl: 'https://www.jrkyushu.co.jp/english/railpass/img/railpass_img_01.jpg' }
+    ],
     backups: [
         { title: '博多運河城', location: '博多', category: 'shop', lat: 33.5896, lng: 130.4109, cost: 0, time: '' },
         { title: '福岡塔', location: '福岡', category: 'fun', time: '19:00', notes: '夜景', cost: 0 },
@@ -280,9 +343,8 @@ const DEFAULT_DATA: Partial<TripState> = {
         {
             dateStr: '9/10 (Tue)',
             events: [
-                { title: '抵達福岡機場 (FUK)', location: 'Fukuoka Airport', category: 'flight', time: '15:40', endTime: '16:30', notes: 'IT720, TPE -> FUK', cost: 0, lat: 33.5859, lng: 130.4506, transports: [{ type: 'flight', flightNo: 'IT720', depAirport: 'TPE', arrAirport: 'FUK', dep: '15:40', arr: '19:00' }] },
-                { title: '前往飯店', location: '博多', category: 'transport', time: '16:45', transports: [{ type: 'public', company: '福岡市地鐵', line: '機場線', direction: '姪濱/唐津', dep: '16:45', cost: 260, platform: '2', note: '往姪濱方向, 東比惠下車' }], cost: 260, lat: 33.5902, lng: 130.4284 },
-                { title: 'APA Hotel Hakata', location: '博多駅東', category: 'stay', time: '17:30', notes: 'Check-in, 休息', cost: 0, lat: 33.5902, lng: 130.4284, bookingLink: 'https://www.booking.com/hotel/jp/apa-hakata-ekimae.html', stayInfo: { startDate: '2025-09-10', endDate: '2025-09-13', checkIn: '15:00', checkOut: '11:00', notes: '房號: 301' } },
+                { title: '抵達福岡機場 (FUK)', location: 'Fukuoka Airport', category: 'flight', time: '15:40', endTime: '16:30', notes: 'IT720, TPE -> FUK', cost: 0, lat: 33.5859, lng: 130.4506, transports: [{ type: 'flight', flightNo: 'IT720', depAirport: 'TPE', arrAirport: 'FUK', dep: '15:40', arr: '19:00', duration: 140 }] },
+                { title: 'APA Hotel Hakata', location: '博多駅東', category: 'stay', time: '17:30', notes: 'Check-in, 休息', cost: 0, lat: 33.5902, lng: 130.4284, bookingLink: 'https://www.booking.com/hotel/jp/apa-hakata-ekimae.html', stayInfo: { startDate: '2025-09-10', endDate: '2025-09-13', checkIn: '15:00', checkOut: '11:00', notes: '房號: 301' }, transports: [{ type: 'public', company: '福岡市地鐵', line: '機場線', direction: '姪濱/唐津', dep: '16:45', cost: 260, platform: '2', note: '往姪濱方向, 東比惠下車', duration: 15 }] },
                 { title: '一蘭拉麵 總本店', location: '中洲', category: 'food', time: '19:00', notes: '一蘭總社大樓, 需排隊', cost: 1200, link: 'https://tabelog.com/fukuoka/A4001/A400102/40000130/', lat: 33.5931, lng: 130.4045, linkedGuide: '一蘭' },
                 { title: '中洲屋台散策', location: '中洲川端', category: 'fun', time: '20:30', notes: '體驗屋台文化', cost: 2000, lat: 33.5925, lng: 130.4050, linkedGuide: '屋台' }
             ],
@@ -290,27 +352,23 @@ const DEFAULT_DATA: Partial<TripState> = {
         {
             dateStr: '9/11 (Wed)',
             events: [
-                { title: '移動: 博多 -> 小倉', location: '博多駅', category: 'transport', time: '09:00', transports: [{ type: 'express', company: 'JR九州', line: '特急 Sonic 9號', direction: '大分', dep: '09:02', cost: 2350, platform: '2', note: '自由席, 40分鐘車程', schedules: [{ dep: '08:20', arr: '09:05', note: 'Sonic 7號' }, { dep: '09:20', arr: '10:05', note: 'Sonic 11號' }] }], cost: 2350, lat: 33.5897, lng: 130.4207 },
-                { title: '轉乘: 小倉 -> 門司港', location: '小倉駅', category: 'transport', time: '09:50', transports: [{ type: 'public', company: 'JR九州', line: '鹿兒島本線', direction: '門司港', dep: '09:55', cost: 280, note: '往門司港行' }], cost: 280, lat: 33.8872, lng: 130.8817 },
-                { title: '門司港懷舊區', location: '門司港', category: 'fun', time: '10:15', notes: '舊門司三井俱樂部、香蕉人像', cost: 0, lat: 33.9443, lng: 130.9575, linkedGuide: '門司港' },
+                { title: '移動: 博多 -> 小倉', location: '博多駅', category: 'transport', time: '09:00', transports: [{ type: 'express', company: 'JR九州', line: '特急 Sonic 9號', direction: '大分', dep: '09:02', cost: 2350, platform: '2', note: '自由席, 40分鐘車程', duration: 40, passId: 'pass_jr_kyushu', schedules: [{ dep: '08:20', arr: '09:05', note: 'Sonic 7號' }, { dep: '09:20', arr: '10:05', note: 'Sonic 11號' }] }], cost: 2350, lat: 33.5897, lng: 130.4207 },
+                { title: '門司港懷舊區', location: '門司港', category: 'fun', time: '10:15', notes: '舊門司三井俱樂部、香蕉人像', cost: 0, lat: 33.9443, lng: 130.9575, linkedGuide: '門司港', transports: [{ type: 'public', company: 'JR九州', line: '鹿兒島本線', direction: '門司港', dep: '09:55', cost: 280, note: '往門司港行', duration: 15, passId: 'pass_jr_kyushu' }] },
                 { title: '燒咖哩 MILKHALL MOJIKO', location: '門司港', category: 'food', time: '11:30', notes: '必吃燒咖哩、布丁', link: 'https://tabelog.com/fukuoka/A4004/A400501/40003565/', cost: 1500, lat: 33.9450, lng: 130.9600 },
-                { title: '搭船前往唐戶', location: '門司港棧橋', category: 'transport', time: '12:45', transports: [{ type: 'ferry', company: '關門汽船', line: '關門聯絡船', direction: '唐戶', dep: '13:00', cost: 400, note: '5分鐘船程', schedules: [{ dep: '12:40', note: '前一班' }, { dep: '13:20', note: '後一班' }] }], cost: 400, lat: 33.9460, lng: 130.9590 },
+                { title: '搭船前往唐戶', location: '門司港棧橋', category: 'transport', time: '12:45', transports: [{ type: 'ferry', company: '關門汽船', line: '關門聯絡船', direction: '唐戶', dep: '13:00', cost: 400, note: '5分鐘船程', duration: 5, schedules: [{ dep: '12:40', note: '前一班' }, { dep: '13:20', note: '後一班' }] }], cost: 400, lat: 33.9460, lng: 130.9590 },
                 { title: '唐戶市場', location: '下關', category: 'food', time: '13:10', notes: '週末限定壽司市集 (平日較少)', cost: 2000, lat: 33.9575, lng: 130.9416, linkedGuide: '唐戶' },
-                { title: '返回小倉', location: '下關 -> 小倉', category: 'transport', time: '14:30', transports: [{ type: 'public', company: 'JR西日本/九州', line: 'JR 山陽本線', direction: '小倉', dep: '14:45', cost: 280, note: '需轉車或搭公車至車站' }], cost: 280, lat: 33.9575, lng: 130.9416 },
-                { title: '小倉城', location: '小倉', category: 'fun', time: '15:30', notes: '天守閣與庭園', cost: 350, lat: 33.8845, lng: 130.8745 },
+                { title: '小倉城', location: '小倉', category: 'fun', time: '15:30', notes: '天守閣與庭園', cost: 350, lat: 33.8845, lng: 130.8745, transports: [{ type: 'public', company: 'JR西日本/九州', line: 'JR 山陽本線', direction: '小倉', dep: '14:45', cost: 280, note: '需轉車或搭公車至車站', duration: 15 }] },
                 { title: '旦過市場', location: '小倉', category: 'food', time: '17:00', notes: '北九州的廚房、大學丼', cost: 1000, lat: 33.8820, lng: 130.8780 },
-                { title: '回程: 小倉 -> 博多', location: '小倉駅', category: 'transport', time: '18:30', transports: [{ type: 'express', company: 'JR西日本', line: '新幹線 Sakura 565號', direction: '博多', dep: '18:39', cost: 2160, platform: '13', note: '17分鐘極速回博多 (自由席)' }], cost: 2160, lat: 33.8872, lng: 130.8817 },
+                { title: '回程: 小倉 -> 博多', location: '小倉駅', category: 'transport', time: '18:30', transports: [{ type: 'express', company: 'JR西日本', line: '新幹線 Sakura 565號', direction: '博多', dep: '18:39', cost: 2160, platform: '13', note: '17分鐘極速回博多 (自由席)', duration: 17, passId: 'pass_jr_kyushu' }], cost: 2160, lat: 33.8872, lng: 130.8817 },
             ]
         },
         {
             dateStr: '9/12 (Thu)',
             events: [
-                { title: '前往太宰府', location: '西鐵天神駅', category: 'transport', time: '09:00', transports: [{ type: 'public', company: '西鐵', line: '天神大牟田線', direction: '太宰府', dep: '09:00', cost: 410, note: '旅人號觀光列車 (需確認時刻)' }], cost: 410, lat: 33.5900, lng: 130.4000 },
-                { title: '太宰府天滿宮', location: '太宰府', category: 'fun', time: '10:00', notes: '摸御神牛、梅枝餅', cost: 150, lat: 33.5196, lng: 130.5338, linkedGuide: '太宰府' },
+                { title: '太宰府天滿宮', location: '太宰府', category: 'fun', time: '10:00', notes: '摸御神牛、梅枝餅', cost: 150, lat: 33.5196, lng: 130.5338, linkedGuide: '太宰府', transports: [{ type: 'public', company: '西鐵', line: '天神大牟田線', direction: '太宰府', dep: '09:00', cost: 410, note: '旅人號觀光列車 (需確認時刻)', duration: 40 }] },
                 { title: '星巴克 表參道店', location: '太宰府', category: 'food', time: '11:00', notes: '隈研吾設計', cost: 600, lat: 33.5185, lng: 130.5320 },
                 { title: '竈門神社', location: '寶滿山', category: 'fun', time: '12:00', notes: '搭乘社區巴士 Mahoroba, 鬼滅聖地', cost: 100, lat: 33.5350, lng: 130.5480 },
-                { title: '前往 LaLaport', location: '太宰府 -> 竹下', category: 'transport', time: '14:30', transports: [{ type: 'public', company: '西鐵巴士', line: '西鐵巴士 / 電車', direction: '博多', cost: 500, note: '建議回天神轉車或搭直達巴' }], cost: 500, lat: 33.5196, lng: 130.5338 },
-                { title: 'LaLaport 福岡', location: '博多那珂', category: 'shop', time: '15:30', notes: '實物大 ν鋼彈立像 (整點聲光秀)', cost: 0, lat: 33.5654, lng: 130.4428, discounts: [{ name: '外國人 5% OFF', url: 'https://mitsui-shopping-park.com/lalaport/fukuoka/tw/coupon/' }, { name: '松本清 3-7% OFF', url: 'https://www.matsukiyo.co.jp/coupon' }], linkedGuide: 'LaLaport' },
+                { title: 'LaLaport 福岡', location: '博多那珂', category: 'shop', time: '15:30', notes: '實物大 ν鋼彈立像 (整點聲光秀)', cost: 0, lat: 33.5654, lng: 130.4428, discounts: [{ name: '外國人 5% OFF', url: 'https://mitsui-shopping-park.com/lalaport/fukuoka/tw/coupon/' }, { name: '松本清 3-7% OFF', url: 'https://www.matsukiyo.co.jp/coupon' }], linkedGuide: 'LaLaport', transports: [{ type: 'public', company: '西鐵巴士', line: '西鐵巴士 / 電車', direction: '博多', cost: 500, note: '建議回天神轉車或搭直達巴', duration: 45, dep: '14:30' }] },
                 { title: '天神地下街', location: '天神', category: 'shop', time: '17:30', notes: '歐風地下街，連接各大百貨', cost: 5000, lat: 33.5900, lng: 130.4000, discounts: [{ name: '大丸百貨 5% OFF', url: 'https://www.daimaru.co.jp/foreign/coupon/' }, { name: '免稅店優惠', url: 'https://www.tenchika.com/coupon/' }], linkedGuide: '天神' },
                 { title: '晚餐:牛腸鍋', location: '博多', category: 'food', time: '20:00', notes: '大山 or 前田屋', cost: 3500, lat: 33.5902, lng: 130.4207 }
             ]
@@ -320,17 +378,16 @@ const DEFAULT_DATA: Partial<TripState> = {
             events: [
                 {
                     title: '前往海之中道', location: '博多駅', category: 'transport', time: '09:00', transports: [
-                        { type: 'public', company: '福岡市地鐵', line: '機場線', direction: '貝塚', dep: '09:00', arr: '09:10', cost: 260, note: '博多 -> 中洲川端 -> 貝塚' },
-                        { type: 'public', company: '西鐵', line: '貝塚線', direction: '西鐵新宮', dep: '09:20', arr: '09:35', cost: 270, note: '貝塚 -> 和白' },
-                        { type: 'public', company: 'JR九州', line: '香椎線', direction: '西戶崎', dep: '09:45', arr: '10:00', cost: 230, note: '和白 -> 海之中道' }
+                        { type: 'public', company: '福岡市地鐵', line: '機場線', direction: '貝塚', dep: '09:00', arr: '09:10', cost: 260, note: '博多 -> 中洲川端 -> 貝塚', duration: 10 },
+                        { type: 'public', company: '西鐵', line: '貝塚線', direction: '西鐵新宮', dep: '09:20', arr: '09:35', cost: 270, note: '貝塚 -> 和白', duration: 15 },
+                        { type: 'public', company: 'JR九州', line: '香椎線', direction: '西戶崎', dep: '09:45', arr: '10:00', cost: 230, note: '和白 -> 海之中道', duration: 15, passId: 'pass_jr_kyushu' }
                     ], cost: 760, lat: 33.5897, lng: 130.4207
                 },
                 { title: '海之中道海濱公園', location: '海之中道', category: 'fun', time: '10:15', notes: '租借腳踏車 (¥500), 花海', cost: 950, lat: 33.6600, lng: 130.3500, linkedGuide: '海之中道' },
                 { title: '海洋世界海之中道', location: '海之中道', category: 'fun', time: '13:00', notes: '海豚表演', cost: 2500, lat: 33.6590, lng: 130.3550, ticketLink: 'https://www.klook.com/zh-TW/activity/2502-marine-world-uminonakamichi-fukuoka/' },
-                { title: '回程: 海之中道 -> 博多', location: '海之中道', category: 'transport', time: '15:30', transports: [{ type: 'ferry', company: '安田產業汽船', line: '海中道航線', direction: '博多埠頭', dep: '15:40', arr: '16:00', cost: 1100, note: '高速船直達' }], cost: 1100, lat: 33.6590, lng: 130.3550 },
+                { title: '回程: 海之中道 -> 博多', location: '海之中道', category: 'transport', time: '15:30', transports: [{ type: 'ferry', company: '安田產業汽船', line: '海中道航線', direction: '博多埠頭', dep: '15:40', arr: '16:00', cost: 1100, note: '高速船直達', duration: 20 }], cost: 1100, lat: 33.6590, lng: 130.3550 },
                 { title: '最後採購 & 領行李', location: '博多駅', category: 'shop', time: '16:30', notes: '博多阪急、AMU PLAZA', cost: 8000, lat: 33.5897, lng: 130.4207 },
-                { title: '前往機場', location: '博多 -> 福岡機場', category: 'transport', time: '18:00', transports: [{ type: 'public', company: '福岡市地鐵', line: '機場線', direction: '福岡機場', dep: '18:15', cost: 260, note: '5分鐘直達' }], cost: 260, lat: 33.5897, lng: 130.4207 },
-                { title: '搭機返台 (TPE)', location: 'Fukuoka Airport', category: 'flight', time: '19:00', endTime: '20:40', notes: 'IT721, FUK -> TPE', cost: 0, lat: 33.5859, lng: 130.4506, transports: [{ type: 'flight', flightNo: 'IT721', depAirport: 'FUK', arrAirport: 'TPE', dep: '19:55', arr: '21:30' }] }
+                { title: '搭機返台 (TPE)', location: 'Fukuoka Airport', category: 'flight', time: '19:00', endTime: '20:40', notes: 'IT721, FUK -> TPE', cost: 0, lat: 33.5859, lng: 130.4506, transports: [{ type: 'public', company: '福岡市地鐵', line: '機場線', direction: '福岡機場', dep: '18:15', cost: 260, note: '5分鐘直達', duration: 5 }, { type: 'flight', flightNo: 'IT721', depAirport: 'FUK', arrAirport: 'TPE', dep: '19:55', arr: '21:30', duration: 155 }] }
             ]
         }
     ]
@@ -338,7 +395,7 @@ const DEFAULT_DATA: Partial<TripState> = {
 
 export const useTripStore = defineStore('trip', {
     state: (): TripState => ({
-        title: '我的日本之旅',
+        title: '東京五天四夜之旅',
         startDate: new Date().toISOString().slice(0, 10),
         settings: {
             currency: 'JPY',
@@ -346,20 +403,23 @@ export const useTripStore = defineStore('trip', {
             voiceURI: '',
             aiSettings: {
                 apiKey: '',
-                model: 'gemini-2.5-flash'
+                model: 'gemini-2.5-flash',
+                customPrompt: ''
             }
         },
         travelers: ['我'],
         days: [],
+        checklists: [],
         backups: [],
         expenses: [],
         passes: [],
-        currencies: {
-            'JPY': { name: '日圓 (日本)', symbol: '¥', rate: 1 },
-            'TWD': { name: '新台幣 (台灣)', symbol: 'NT$', rate: 0.21 }, // 預設匯率
-        },
         attractionGuides: {},
+        currencies: DEFAULT_DATA.currencies || {},
         isOnboardingOpen: false,
+        isSettingsOpen: false,
+        settingsTab: 'trip',
+        transportConflictIds: [] as string[],
+        eventConflictIds: [] as string[],
         categories: [
             { id: 'fun', name: '景點', icon: 'fa-solid fa-torii-gate' },
             { id: 'food', name: '美食', icon: 'fa-solid fa-utensils' },
@@ -369,8 +429,7 @@ export const useTripStore = defineStore('trip', {
             { id: 'flight', name: '航班', icon: 'fa-solid fa-plane' },
         ],
         headerCollapsed: false,
-        installPromptEvent: null as any, // Store the beforeinstallprompt event
-        checklists: [],
+        installPromptEvent: null as any // Store the beforeinstallprompt event
     }),
     getters: {
         currentCurrency(): Currency {
@@ -378,12 +437,6 @@ export const useTripStore = defineStore('trip', {
         }
     },
     actions: {
-        setInstallPrompt(event: any) {
-            this.installPromptEvent = event
-        },
-        clearInstallPrompt() {
-            this.installPromptEvent = null
-        },
         addChecklistItem(categoryId: string, text: string) {
             const category = this.checklists.find(c => c.id === categoryId)
             if (category) {
@@ -523,6 +576,32 @@ export const useTripStore = defineStore('trip', {
                         }
                     })
 
+                    // Migration: Guide data structure
+                    if (this.attractionGuides) {
+                        Object.keys(this.attractionGuides).forEach(key => {
+                            const guide = this.attractionGuides[key] as any;
+
+                            // Migrate link -> original_url
+                            if (guide.link && !guide.original_url) {
+                                guide.original_url = guide.link;
+                                delete guide.link;
+                            }
+
+                            // Migrate image -> thumbnail_url
+                            if (guide.image && !guide.thumbnail_url) {
+                                guide.thumbnail_url = guide.image;
+                                delete guide.image;
+                            }
+
+                            // Add missing fields
+                            if (!guide.id) guide.id = crypto.randomUUID();
+                            if (!guide.media_type) guide.media_type = 'web';
+                            if (!guide.location) guide.location = { name: '' };
+                            if (!guide.user_notes) guide.user_notes = '';
+                            if (!guide.status) guide.status = 'want_to_go';
+                        });
+                    }
+
                     // Migration: Move day-specific backups to global backups if global backups are empty
                     if (!parsed.backups && this.days.some((d: any) => d.backups && d.backups.length > 0)) {
                         this.days.forEach((day: any) => {
@@ -568,6 +647,13 @@ export const useTripStore = defineStore('trip', {
                     } else {
                         this.checklists = parsed.checklists
                     }
+
+                    // Ensure all events are sorted by time
+                    this.days.forEach(day => {
+                        if (day.events) {
+                            day.events.sort((a: Event, b: Event) => a.time.localeCompare(b.time));
+                        }
+                    });
 
                 } catch (e) {
                     console.error("Data load failed", e)
@@ -717,7 +803,39 @@ export const useTripStore = defineStore('trip', {
         },
         addEvent(dayIndex: number, event: Event) {
             this.days[dayIndex].events.push(event)
+            this.days[dayIndex].events.sort((a: Event, b: Event) => a.time.localeCompare(b.time))
+            this.validateConflicts(dayIndex)
             this.saveData()
+        },
+        adjustEventTime(dayIndex: number, eventId: string, newTime: string) {
+            const day = this.days[dayIndex]
+            if (day) {
+                const event = day.events.find(e => e.id === eventId)
+                if (event) {
+                    event.time = newTime
+                    day.events.sort((a: Event, b: Event) => a.time.localeCompare(b.time))
+                    this.validateConflicts(dayIndex)
+                    this.saveData()
+                }
+            }
+        },
+        validateConflicts(dayIndex: number) {
+            const events = this.days[dayIndex].events
+            const { transportConflicts, eventConflicts } = validateDaySchedule(events)
+            this.transportConflictIds = transportConflicts
+            this.eventConflictIds = eventConflicts
+        },
+        updateEvent(dayIndex: number, eventId: string, updatedEvent: Partial<Event>) {
+            const day = this.days[dayIndex]
+            if (day) {
+                const eventIndex = day.events.findIndex(e => e.id === eventId)
+                if (eventIndex !== -1) {
+                    day.events[eventIndex] = { ...day.events[eventIndex], ...updatedEvent }
+                    day.events.sort((a: Event, b: Event) => a.time.localeCompare(b.time))
+                    this.validateConflicts(dayIndex)
+                    this.saveData()
+                }
+            }
         },
         setHeaderCollapsed(collapsed: boolean) {
             this.headerCollapsed = collapsed
@@ -727,6 +845,30 @@ export const useTripStore = defineStore('trip', {
                 this.currencies[code].rate = rate
                 this.saveData()
             }
+        },
+        updateGuide(newTitle: string, data: Guide, oldTitle?: string) {
+            if (newTitle && data) {
+                // 1. If renaming, delete old key
+                if (oldTitle && oldTitle !== newTitle && this.attractionGuides[oldTitle]) {
+                    delete this.attractionGuides[oldTitle]
+                }
+
+                // 2. Update Store with new title
+                this.attractionGuides[newTitle] = JSON.parse(JSON.stringify(data))
+                this.saveData()
+            }
+        },
+        setSettingsOpen(isOpen: boolean, tab: string = 'trip') {
+            this.isSettingsOpen = isOpen
+            if (isOpen) {
+                this.settingsTab = tab
+            }
+        },
+        setInstallPrompt(event: any) {
+            this.installPromptEvent = event
+        },
+        clearInstallPrompt() {
+            this.installPromptEvent = null
         }
     }
 })

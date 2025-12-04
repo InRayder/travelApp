@@ -1,6 +1,6 @@
 <template>
   <transition name="slide-up">
-    <div v-if="isOpen" class="fixed inset-0 z-[100] flex items-end justify-center pointer-events-none">
+    <div v-if="isOpen" class="fixed inset-0 flex items-end justify-center pointer-events-none" :style="{ zIndex }">
       <div class="absolute inset-0 bg-black/30 pointer-events-auto transition-opacity" @click="emit('close')"></div>
       <div class="bg-white w-full max-w-md rounded-t-3xl p-6 pointer-events-auto shadow-2xl modal-body flex flex-col relative z-50">
         
@@ -62,7 +62,7 @@
             <div v-if="form.splitMethod === 'average'">
               <div class="text-xs text-gray-400 mb-2">選擇分攤人：</div>
               <div class="flex flex-wrap gap-2">
-                <button v-for="p in store.travelers" :key="p" @click="toggleInvolved(p)" class="px-3 py-1.5 rounded-full border text-xs font-bold transition-all" :class="form.involved.includes(p) ? 'bg-green-100 text-green-700 border-green-200' : 'bg-white text-gray-300 border-gray-100'">
+                <button v-for="p in store.travelers" :key="p" @click="toggleInvolved(p)" class="px-3 py-1.5 rounded-full border text-xs font-bold transition-all" :class="(form.involved || []).includes(p) ? 'bg-green-100 text-green-700 border-green-200' : 'bg-white text-gray-300 border-gray-100'">
                   {{ p }}
                 </button>
               </div>
@@ -71,7 +71,7 @@
             <div v-else class="space-y-2">
               <div v-for="p in store.travelers" :key="p" class="flex items-center gap-2">
                 <span class="text-sm font-bold text-gray-600 w-12">{{ p }}</span>
-                <input v-model.number="form.customShares[p]" @input="onShareChange(p)" type="number" class="flex-1 bg-white p-2 rounded-lg border border-gray-200 text-xs font-mono" placeholder="金額">
+                <input v-if="form.customShares" v-model.number="form.customShares[p]" @input="onShareChange(p)" type="number" class="flex-1 bg-white p-2 rounded-lg border border-gray-200 text-xs font-mono" placeholder="金額">
               </div>
             </div>
           </div>
@@ -87,14 +87,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, toRef } from 'vue'
 import { useTripStore } from '../stores/trip.ts'
 import type { Expense } from '../stores/trip.ts'
+import { useDynamicZIndex } from '../composables/useZIndex'
 
 const props = defineProps<{
   isOpen: boolean
-  initialData: Expense | null
+  initialData?: Expense | null
 }>()
+
+const { zIndex } = useDynamicZIndex(toRef(props, 'isOpen'))
 
 const emit = defineEmits(['close', 'save', 'delete'])
 
@@ -109,7 +112,8 @@ const form = ref<Expense>({
   splitMethod: 'average',
   involved: [],
   customShares: {},
-  date: ''
+  date: '',
+  split: []
 })
 
 watch(() => props.isOpen, (newVal) => {
@@ -127,10 +131,12 @@ watch(() => props.isOpen, (newVal) => {
         splitMethod: 'average', 
         involved: [...store.travelers], 
         customShares: {},
-        date: store.days[0].dateStr.split(' ')[0]
+        date: store.days[0].dateStr.split(' ')[0],
+        split: []
       }
       // 初始化自訂分攤 (Init custom shares)
-      store.travelers.forEach(t => form.value.customShares[t] = 0)
+      if (!form.value.customShares) form.value.customShares = {}
+      store.travelers.forEach(t => form.value.customShares![t] = 0)
     }
   }
 })
@@ -147,8 +153,9 @@ const initCustomShares = () => {
   const avg = Math.floor(total / count)
   const remainder = total % count
   
+  if (!form.value.customShares) form.value.customShares = {}
   store.travelers.forEach((t, i) => {
-    form.value.customShares[t] = avg + (i < remainder ? 1 : 0)
+    form.value.customShares![t] = avg + (i < remainder ? 1 : 0)
   })
   fixedTravelers.value.clear()
 }
@@ -159,7 +166,9 @@ const recalculateShares = () => {
     const fixed = Array.from(fixedTravelers.value)
     
     fixed.forEach(p => {
-        fixedSum += (form.value.customShares[p] || 0)
+        if (form.value.customShares) {
+            fixedSum += (form.value.customShares[p] || 0)
+        }
     })
     
     const remainingAmount = total - fixedSum
@@ -170,7 +179,9 @@ const recalculateShares = () => {
         const remainder = remainingAmount % others.length
         
         others.forEach((t, i) => {
-            form.value.customShares[t] = avg + (i < remainder ? 1 : 0)
+            if (form.value.customShares) {
+                form.value.customShares[t] = avg + (i < remainder ? 1 : 0)
+            }
         })
     }
 }
