@@ -464,7 +464,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, toRaw, nextTick, computed, onMounted, toRef } from 'vue'
+import { ref, watch, toRaw, nextTick, computed, toRef } from 'vue'
 import { useTripStore } from '../stores/trip.ts'
 import type { Event as TripEvent, Transport } from '../stores/trip.ts'
 import { diffMinutes, addMinutes } from '../utils/time.ts'
@@ -662,11 +662,8 @@ const handleGuideSave = (title: string, data: any) => {
     ...data
   }
 
-  // Add to store
-  if (!store.attractionGuides) {
-    store.attractionGuides = {}
-  }
-  store.attractionGuides[guideId] = newGuide
+  // 使用封裝的 action 更新 Guide
+  store.updateGuide(guideId, newGuide)
   
   // Link to current event
   form.value.linkedGuide = guideId
@@ -695,15 +692,22 @@ const suggestTransport = async (transportIndex: number) => {
   let fromLocation = ''
   let fromTime = ''
   
-  const currentDayEvents = store.days[props.dayIndex].events
+  const dayIdx = props.dayIndex
+  if (dayIdx === undefined) {
+    console.warn('dayIndex is undefined')
+    alert('無法定位行程日期，無法使用 AI 推薦交通。')
+    return
+  }
+
+  const currentDayEvents = store.days[dayIdx].events
 
   if (props.isAdding) {
     if (currentDayEvents.length > 0) {
       const prevEvent = currentDayEvents[currentDayEvents.length - 1]
       fromLocation = prevEvent.location
       fromTime = prevEvent.endTime || prevEvent.time
-    } else if (props.dayIndex > 0) {
-      const prevDayEvents = store.days[props.dayIndex - 1].events
+    } else if (dayIdx > 0) {
+      const prevDayEvents = store.days[dayIdx - 1].events
       if (prevDayEvents.length > 0) {
         const prevEvent = prevDayEvents[prevDayEvents.length - 1]
         fromLocation = prevEvent.location
@@ -716,8 +720,8 @@ const suggestTransport = async (transportIndex: number) => {
       const prevEvent = currentDayEvents[currentIndex - 1]
       fromLocation = prevEvent.location
       fromTime = prevEvent.endTime || prevEvent.time
-    } else if (props.dayIndex > 0) {
-      const prevDayEvents = store.days[props.dayIndex - 1].events
+    } else if (dayIdx > 0) {
+      const prevDayEvents = store.days[dayIdx - 1].events
       if (prevDayEvents.length > 0) {
         const prevEvent = prevDayEvents[prevDayEvents.length - 1]
         fromLocation = prevEvent.location

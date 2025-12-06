@@ -30,7 +30,7 @@
 
   <!-- iOS Install Instructions -->
   <div v-if="showInstallPrompt && isIOS" class="fixed bottom-0 left-0 right-0 z-50 animate-fade-in-up">
-    <div class="bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] rounded-t-2xl p-6 pb-8">
+    <div class="bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] rounded-t-2xl p-6" style="padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));">
       <div class="flex justify-between items-start mb-4">
         <div class="flex items-center gap-3">
           <div class="w-12 h-12 bg-jp-red rounded-xl flex items-center justify-center text-white shadow-sm text-xl">

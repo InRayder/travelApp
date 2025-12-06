@@ -85,6 +85,7 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
 import { Doughnut } from 'vue-chartjs'
 import ExpenseModal from '../components/ExpenseModal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
+import { useConfirmModal } from '../composables/useConfirmModal'
 import type { Expense } from '../stores/trip.ts'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
@@ -96,25 +97,14 @@ const expenseModalOpen = ref(false)
 const editingExpense = ref<Expense | null>(null)
 const editingIndex = ref(-1)
 
-// 確認視窗狀態
-const confirmModalOpen = ref(false)
-const confirmTitle = ref('')
-const confirmMessage = ref('')
-const confirmCallback = ref<(() => void) | null>(null)
-
-const openConfirmModal = (title: string, message: string, callback: () => void) => {
-  confirmTitle.value = title
-  confirmMessage.value = message
-  confirmCallback.value = callback
-  confirmModalOpen.value = true
-}
-
-const handleConfirmAction = () => {
-  if (confirmCallback.value) {
-    confirmCallback.value()
-    confirmCallback.value = null
-  }
-}
+// 確認視窗狀態 - 使用共用 composable
+const {
+  isOpen: confirmModalOpen,
+  title: confirmTitle,
+  message: confirmMessage,
+  open: openConfirmModal,
+  confirm: handleConfirmAction
+} = useConfirmModal()
 // --- Computed Stats ---
 const totalExpense = computed(() => expenses.value.reduce((acc, cur) => acc + (cur.amount || 0), 0))
 
@@ -215,18 +205,19 @@ const openEditExpense = (exp: Expense, idx: number) => {
 
 const saveExpense = (data: Expense) => {
   if (editingIndex.value !== -1) {
-    expenses.value[editingIndex.value] = data
+    // 編輯現有 - 使用封裝的 action
+    store.updateExpenseAt(editingIndex.value, data)
   } else {
-    expenses.value.push(data)
+    // 新增 - 使用封裝的 action
+    store.addExpenseRecord(data)
   }
-  store.saveData()
   expenseModalOpen.value = false
 }
 
 const deleteExpense = () => {
   openConfirmModal('刪除支出', '確定要刪除此筆支出嗎？', () => {
-    expenses.value.splice(editingIndex.value, 1)
-    store.saveData()
+    // 使用封裝的 action
+    store.removeExpense(editingIndex.value)
     expenseModalOpen.value = false
   })
 }

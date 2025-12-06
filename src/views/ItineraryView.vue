@@ -3,7 +3,7 @@
     <DateSelector :days="days" :currentDayIndex="currentDayIndex" @select-day="selectDay" />
 
     <!-- View Toggle -->
-    <div class="px-4 py-2 bg-white border-b border-gray-100 flex justify-center shrink-0 z-20 relative">
+    <div class="px-4 py-2 bg-white border-b border-gray-100 flex justify-center shrink-0 z-10 relative">
       <div class="bg-gray-100 p-1 rounded-lg flex gap-1">
         <button 
           @click="setViewMode('list')" 
@@ -305,6 +305,7 @@ import ExpenseModal from '../components/ExpenseModal.vue'
 import TransportModal from '../components/TransportModal.vue'
 import DiscountModal from '../components/DiscountModal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
+import { useConfirmModal } from '../composables/useConfirmModal'
 import type { Event, Expense, Transport } from '../stores/trip.ts'
 
 const store = useTripStore()
@@ -449,35 +450,16 @@ const setViewMode = (mode: 'list' | 'map') => {
   }
 }
 
-// 確認視窗狀態
-const confirmModalOpen = ref(false)
-const confirmTitle = ref('')
-const confirmMessage = ref('')
-const showCancel = ref(true)
-const confirmCallback = ref<(() => void) | null>(null)
-
-const openAlert = (message: string) => {
-  confirmTitle.value = '提示'
-  confirmMessage.value = message
-  confirmCallback.value = null
-  showCancel.value = false
-  confirmModalOpen.value = true
-}
-
-const openConfirmModal = (title: string, message: string, callback: () => void) => {
-  confirmTitle.value = title
-  confirmMessage.value = message
-  confirmCallback.value = callback
-  showCancel.value = true
-  confirmModalOpen.value = true
-}
-
-const handleConfirmAction = () => {
-  if (confirmCallback.value) {
-    confirmCallback.value()
-    confirmCallback.value = null
-  }
-}
+// 確認視窗狀態 - 使用共用 composable
+const {
+  isOpen: confirmModalOpen,
+  title: confirmTitle,
+  message: confirmMessage,
+  showCancel,
+  openAlert,
+  open: openConfirmModal,
+  confirm: handleConfirmAction
+} = useConfirmModal()
 
 const handleDragEnd = (evt: any) => {
   isDragging.value = false
@@ -713,43 +695,40 @@ const handleInsertFromBackup = (idx: number) => {
  * @param {Object} data - 編輯後的資料
  */
 const saveEdit = (data: Event) => {
-  const newItem = { ...data } // Ensure we're working with a copy
-  if (!newItem.id) newItem.id = crypto.randomUUID()
+  const newItem = { ...data }
+  
   if (isAdding.value) {
     if (isAddingBackup.value) {
-      store.backups.push(newItem)
+      // 新增備案 - 使用封裝的 action
+      store.addBackup(newItem)
     } else {
-      if (insertAtIndex.value !== -1) {
-        currentDay.value.events.splice(insertAtIndex.value, 0, newItem)
-        insertAtIndex.value = -1
+      // 新增事件 - 處理從備案升級的情況
+      if (promotedBackupIdx.value !== -1) {
+        // 使用 promoteBackupToEvent 一次完成升級
+        store.promoteBackupToEvent(promotedBackupIdx.value, currentDayIndex.value, newItem)
+        promotedBackupIdx.value = -1
       } else {
-        currentDay.value.events.push(newItem)
+        // 一般新增事件
+        const insertIdx = insertAtIndex.value !== -1 ? insertAtIndex.value : undefined
+        store.insertEvent(currentDayIndex.value, newItem, insertIdx)
+        insertAtIndex.value = -1
       }
     }
   } else {
-    // Editing existing
+    // 編輯現有項目
     if (isAddingBackup.value) {
-      // Editing a backup
+      // 編輯備案 - 使用封裝的 action
       if (editingIndex.value !== -1) {
-        store.backups[editingIndex.value] = newItem
+        store.updateBackup(editingIndex.value, newItem)
       }
     } else {
-      // Editing an event
-      if (editingIndex.value !== -1) {
-        currentDay.value.events[editingIndex.value] = newItem
+      // 編輯事件 - 使用現有的 updateEvent action
+      if (editingIndex.value !== -1 && editingItem.value?.id) {
+        store.updateEvent(currentDayIndex.value, editingItem.value.id, newItem)
       }
     }
   }
 
-  // If promoting a backup, remove it from backups after it's added to events
-  if (promotedBackupIdx.value !== -1 && !isAddingBackup.value) {
-    store.backups.splice(promotedBackupIdx.value, 1)
-    promotedBackupIdx.value = -1
-  }
-
-  currentDay.value.events.sort((a, b) => a.time.localeCompare(b.time))
-  store.validateConflicts(currentDayIndex.value)
-  store.saveData()
   editModalOpen.value = false
 }
 
@@ -764,25 +743,14 @@ const deleteEvent = () => {
     editModalOpen.value = false
     
     if (isAddingBackup.value) {
-      // Delete from backups
+      // 刪除備案 - 使用封裝的 action
       if (editingIndex.value !== -1) {
-        store.backups.splice(editingIndex.value, 1)
-        store.saveData()
+        store.removeBackup(editingIndex.value)
       }
     } else {
-      // Delete from events
-      // Use object reference to find index, more robust than editingIndex
-      if (editingItem.value) {
-        const events = currentDay.value.events
-        const idx = events.indexOf(editingItem.value)
-        if (idx !== -1) {
-          events.splice(idx, 1)
-          store.saveData()
-        } else if (editingIndex.value !== -1) {
-          // Fallback to index if object not found (e.g. if cloned)
-          events.splice(editingIndex.value, 1)
-          store.saveData()
-        }
+      // 刪除事件 - 使用封裝的 action
+      if (editingItem.value?.id) {
+        store.removeEvent(currentDayIndex.value, editingItem.value.id)
       }
     }
   })
@@ -792,10 +760,9 @@ const deleteEvent = () => {
  * 將行程移至備案
  */
 const moveToBackup = () => {
-  if (editingIndex.value !== -1 && !isAddingBackup.value) {
-    const item = currentDay.value.events.splice(editingIndex.value, 1)[0]
-    store.backups.push(item)
-    store.saveData()
+  if (editingItem.value?.id && !isAddingBackup.value) {
+    // 使用封裝的 action 移動事件到備案
+    store.moveEventToBackup(currentDayIndex.value, editingItem.value.id)
     editModalOpen.value = false
   }
 }
@@ -831,8 +798,8 @@ const editBackup = (item: Event, idx: number) => {
 
 const deleteBackup = (idx: number) => {
   openConfirmModal('刪除備案', '確定要刪除此備案嗎？', () => {
-    store.backups.splice(idx, 1)
-    store.saveData()
+    // 使用封裝的 action
+    store.removeBackup(idx)
   })
 }
 
@@ -927,25 +894,23 @@ const guideUpdateCount = ref(0)
 const handleGuideSave = (title: string, data: any) => {
   if (title && data) {
     console.log('Saving guide:', title, data)
-    // 1. Update Store
-    store.attractionGuides[title] = JSON.parse(JSON.stringify(data))
-    store.saveData()
+    // 使用封裝的 action 更新 Guide
+    store.updateGuide(title, data)
 
-    // 2. Update Active Guide directly with new data
+    // Update Active Guide directly with new data
     if (activeGuide.value && activeGuide.value.title === title) {
       activeGuide.value = {
         title: title,
         data: data 
       }
-      // 3. Force re-render
       guideUpdateCount.value++
     }
   }
 }
 
 const saveExpense = (data: Expense) => {
-  store.expenses.push(data)
-  store.saveData()
+  // 使用封裝的 action
+  store.addExpenseRecord(data)
   expenseModalOpen.value = false
   openAlert('支出已新增')
 }

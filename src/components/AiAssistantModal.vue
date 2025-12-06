@@ -486,24 +486,21 @@ const confirmAction = (msgIndex: number) => {
   const data = msg.pendingAction
   
   if (data.action === 'add_event') {
-    store.days[data.dayIndex].events.push({
+    // 使用封裝的 action 新增事件
+    store.insertEvent(data.dayIndex, {
         id: crypto.randomUUID(),
         ...data.event,
         transports: []
     })
-    // Auto sort
-    store.days[data.dayIndex].events.sort((a: any, b: any) => a.time.localeCompare(b.time))
   } else if (data.action === 'add_guide') {
-    store.attractionGuides[data.name] = data.guide
+    // 使用封裝的 action 新增 Guide
+    store.updateGuide(data.name, data.guide)
   } else if (data.action === 'add_conversation') {
     conversationStore.addPhrase(data.categoryId, data.phrase)
   } else if (data.action === 'modify_days') {
       data.modifications.forEach((mod: any) => {
           if (store.days[mod.dayIndex]) {
-              // Preserve IDs if possible or just replace. 
-              // To be safe and simple, we replace the events list but try to keep IDs if they match? 
-              // Actually, for "All-Powerful", replacing is expected.
-              // We should ensure new events have IDs.
+              // 直接替換 events 列表（全能模式）
               const newEvents = mod.events.map((evt: any) => ({
                   ...evt,
                   id: evt.id || crypto.randomUUID(),

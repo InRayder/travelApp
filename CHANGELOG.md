@@ -1,5 +1,30 @@
 # 更新日誌 (Changelog)
 
+## [0.1.5] - 2025-12-07
+
+### 程式碼重構 (Refactoring)
+- **類型定義模組化**: 將所有介面定義 (`Guide`, `Event`, `Transport`, `Expense` 等) 抽離至獨立的 `types.ts` 檔案，提升程式碼可維護性。
+- **預設資料分離**: 將範例行程 (`EXAMPLE_TRIP`) 與預設攻略 (`DEFAULT_GUIDES`) 移至 `data/` 目錄，結構更清晰。
+- **Store Actions 封裝**: 新增 CRUD 封裝方法：
+  - **備案操作**: `addBackup`, `removeBackup`, `updateBackup`, `promoteBackupToEvent`
+  - **事件操作**: `insertEvent`, `removeEvent`, `moveEventToBackup`
+  - **支出操作**: `addExpenseRecord`, `updateExpenseAt`, `removeExpense`
+  - **攻略操作**: `deleteGuide`
+  - **資料匯入**: `importData`
+
+### 程式碼改善 (Code Improvements)
+- **統一確認視窗邏輯**: 新增 `useConfirmModal` composable，統一管理確認對話框與提示訊息。
+- **View 層簡化**: `ItineraryView` 與 `AccountingView` 改用封裝的 Store actions，移除直接操作 state 的程式碼。
+- **資料操作安全性**: 所有 CRUD 操作確保自動生成 UUID、自動排序、自動驗證衝突。
+
+### 功能優化 (Enhancements)
+- **清除資料保留 API Key**: 清除行程資料時會保留使用者的 Gemini API Key 設定。
+- **資料匯入增強**: `importData` 方法加入資料清理與驗證，確保匯入的資料格式正確。
+
+### 開發體驗 (Developer Experience)
+- **iOS 觸控優化**: 修正 iOS Safari 上按鈕點擊問題，加入 `touch-action` 與 `z-index` 調整。
+- **Vite 開發伺服器**: 開啟 `host: true` 設定，支援手機等外部裝置透過區域網路訪問開發伺服器。
+
 ## [0.1.4] - 2025-12-05
 
 ### 主要功能 (Major Features)

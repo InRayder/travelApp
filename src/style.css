@@ -165,3 +165,17 @@ html,
 body {
     touch-action: manipulation;
 }
+
+/* iOS Safari Touch Fix - 確保按鈕可被點擊 */
+button {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    cursor: pointer;
+}
+
+/* Header 設定按鈕修正 */
+header button {
+    position: relative;
+    z-index: 100;
+    touch-action: manipulation;
+}

@@ -46,5 +46,8 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src')
     }
+  },
+  server: {
+    host: true  // 監聽所有網路介面，允許手機等外部裝置訪問
   }
 })

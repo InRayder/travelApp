@@ -1,6 +1,6 @@
 import { ref, watch, type Ref } from 'vue'
 
-const globalZIndex = ref(1000)
+const globalZIndex = ref(10000)
 
 export function useDynamicZIndex(isOpen: Ref<boolean>) {
     const zIndex = ref(globalZIndex.value)

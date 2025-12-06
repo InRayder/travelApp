@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 pb-2 bg-jp-cream z-20 shrink-0 shadow-sm relative">
+  <div class="px-4 pb-2 bg-jp-cream z-10 shrink-0 shadow-sm relative">
     <div 
       ref="scrollContainer"
       class="flex overflow-x-auto gap-3 pb-2 pt-2 hide-scrollbar snap-x px-1 cursor-grab select-none"

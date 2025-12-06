@@ -45,6 +45,8 @@ import { RouterLink } from 'vue-router'
 
 <style scoped>
 .pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 20px);
+  /* 使用 safe-area-inset-bottom 處理有圓角或 home indicator 的手機 */
+  /* 額外增加基本 padding 確保即使在一般手機上也有足夠空間 */
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
 }
 </style>
