@@ -8,15 +8,15 @@
     <SettingsModal :isOpen="store.isSettingsOpen" @close="store.setSettingsOpen(false)" />
     <AiAssistantModal 
     v-if="store.settings.aiSettings?.apiKey"
-    :isOpen="aiAssistantOpen"
-    @close="aiAssistantOpen = false"
+    :isOpen="store.isAiAssistantOpen"
+    @close="store.isAiAssistantOpen = false"
     @open-settings="store.setSettingsOpen(true)"
   />
     
     <!-- AI Assistant FAB -->
     <button
       v-if="store.settings.aiSettings?.apiKey"
-      @click="aiAssistantOpen = true"
+      @click="store.isAiAssistantOpen = true"
       class="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
       aria-label="AI 助手"
     >
@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { onMounted, onBeforeUnmount } from 'vue'
 import { RouterView } from 'vue-router'
 import { useTripStore } from './stores/trip.ts'
 import AppHeader from './components/AppHeader.vue'
@@ -42,7 +42,6 @@ import OnboardingModal from './components/OnboardingModal.vue'
 
 import { SpeedInsights } from "@vercel/speed-insights/vue"
 
-const aiAssistantOpen = ref(false)
 const store = useTripStore()
 
 const handleInstallPrompt = (e: Event) => {

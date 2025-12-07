@@ -123,9 +123,29 @@
             <font-awesome-icon icon="fa-solid fa-calendar-plus" />
           </div>
           <p class="text-sm font-bold mb-4">這一天還沒有安排行程</p>
-          <button @click="openAddModal(false)" class="bg-jp-mustard text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-yellow-600 transition-all flex items-center gap-2">
-            <font-awesome-icon icon="fa-solid fa-plus" /> 新增第一個行程
-          </button>
+          <div class="flex flex-col gap-3">
+            <button @click="openAddModal(false)" class="bg-jp-mustard text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-yellow-600 transition-all flex items-center gap-2">
+              <font-awesome-icon icon="fa-solid fa-plus" /> 新增第一個行程
+            </button>
+            
+            <!-- AI 行程生成引導 - 僅在有設定 API Key 時顯示 -->
+            <button 
+              v-if="store.settings.aiSettings?.apiKey"
+              @click="store.isAiAssistantOpen = true"
+              class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:from-indigo-600 hover:to-purple-700 transition-all flex items-center gap-2"
+            >
+              <font-awesome-icon icon="fa-solid fa-wand-magic-sparkles" /> 用 AI 生成行程
+            </button>
+            
+            <!-- 沒有 API Key 時顯示設定提示 -->
+            <button 
+              v-else
+              @click="store.setSettingsOpen(true, 'system')"
+              class="text-gray-400 text-sm underline hover:text-gray-600 transition-colors"
+            >
+              設定 AI 功能來自動生成行程 →
+            </button>
+          </div>
         </div>
       </div>
       </main>

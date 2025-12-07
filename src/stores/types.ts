@@ -184,6 +184,7 @@ export interface TripState {
     installPromptEvent: any;
     checklists: ChecklistCategory[];
     isSettingsOpen: boolean;
+    isAiAssistantOpen: boolean;
     settingsTab: string;
     transportConflictIds: string[];
     eventConflictIds: string[];

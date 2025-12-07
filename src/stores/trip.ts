@@ -63,6 +63,7 @@ export const useTripStore = defineStore('trip', {
         currencies: DEFAULT_DATA.currencies || {},
         isOnboardingOpen: false,
         isSettingsOpen: false,
+        isAiAssistantOpen: false,
         settingsTab: 'trip',
         transportConflictIds: [] as string[],
         eventConflictIds: [] as string[],
@@ -441,6 +442,43 @@ export const useTripStore = defineStore('trip', {
 
             this.days.push(newDay)
             this.saveData()
+        },
+        /**
+         * 刪除指定天數，該天的行程會移至備案
+         * @param dayIndex 要刪除的天數索引
+         */
+        removeDay(dayIndex: number) {
+            if (dayIndex < 0 || dayIndex >= this.days.length) return
+            if (this.days.length <= 1) return // 至少保留一天
+
+            const dayToRemove = this.days[dayIndex]
+
+            // 將該天的行程移至備案
+            if (dayToRemove.events && dayToRemove.events.length > 0) {
+                this.backups.push(...dayToRemove.events)
+            }
+
+            // 刪除該天
+            this.days.splice(dayIndex, 1)
+
+            // 重新計算日期字串
+            this.recalculateDayStrings()
+
+            this.saveData()
+        },
+        /**
+         * 重新計算所有天數的日期字串
+         */
+        recalculateDayStrings() {
+            const start = new Date(this.startDate)
+            this.days.forEach((day, index) => {
+                const date = new Date(start)
+                date.setDate(start.getDate() + index)
+                const month = date.getMonth() + 1
+                const d = date.getDate()
+                const dayOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()]
+                day.dateStr = `${month}/${d} (${dayOfWeek})`
+            })
         },
         updateTravelers(newTravelers: string[]) {
             this.travelers = newTravelers
