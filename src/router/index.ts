@@ -30,6 +30,16 @@ const router = createRouter({
             path: '/checklist',
             name: 'checklist',
             component: () => import('../views/ChecklistView.vue')
+        },
+        {
+            path: '/vlog-script',
+            name: 'vlog-script',
+            component: () => import('../views/VlogScriptView.vue')
+        },
+        {
+            path: '/ai-camera',
+            name: 'ai-camera',
+            component: () => import('../views/AiCameraView.vue')
         }
     ]
 })

@@ -21,25 +21,11 @@
       </h1>
     </div>
 
-    <!-- 佔位符，讓 Header 佈局保持正常 -->
-    <div class="w-12 h-12"></div>
   </header>
-  
-  <!-- 設定按鈕改為完全獨立的 fixed 定位，確保可以點擊 -->
-  <button 
-    @click="store.setSettingsOpen(true)" 
-    class="fixed top-3 right-4 w-12 h-12 rounded-full bg-white border border-gray-100 shadow-lg flex items-center justify-center text-jp-gray hover:text-jp-dark transition-all duration-300 z-50"
-    :class="store.headerCollapsed ? 'top-2 w-10 h-10' : 'top-12'"
-    aria-label="設定"
-    style="touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1);"
-  >
-    <font-awesome-icon icon="fa-solid fa-gear" class="text-lg" />
-  </button>
 </template>
 
 <script setup lang="ts">
 import { useTripStore } from '../stores/trip.ts'
 
 const store = useTripStore()
-const emit = defineEmits(['open-settings'])
 </script>

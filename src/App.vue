@@ -1,6 +1,6 @@
 <template>
   <div class="h-[100dvh] flex flex-col relative overflow-hidden text-jp-dark font-sans bg-pattern-seigaiha">
-    <AppHeader @open-settings="store.setSettingsOpen(true)" />
+    <AppHeader />
     <div class="flex-1 overflow-hidden relative"> <!-- 內距由視圖處理 (Padding handled by views) -->
       <RouterView />
     </div>
