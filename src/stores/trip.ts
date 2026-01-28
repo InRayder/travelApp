@@ -35,6 +35,7 @@ const STORAGE_KEY = 'easy_trip_data_v7'
 import { DEFAULT_GUIDES } from '../data/defaultGuides'
 import { EXAMPLE_TRIP } from '../data/exampleTrip'
 
+
 // Alias for backward compatibility
 const DEFAULT_DATA = EXAMPLE_TRIP
 
@@ -327,15 +328,20 @@ export const useTripStore = defineStore('trip', {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
         },
         loadExampleData() {
-            this.days = JSON.parse(JSON.stringify(DEFAULT_DATA.days))
-            this.backups = JSON.parse(JSON.stringify(DEFAULT_DATA.backups || []))
-            this.expenses = JSON.parse(JSON.stringify(DEFAULT_DATA.expenses))
-            this.travelers = JSON.parse(JSON.stringify(DEFAULT_DATA.travelers))
-            this.passes = []
-            this.attractionGuides = JSON.parse(JSON.stringify(DEFAULT_GUIDES))
-            this.settings = { currency: 'JPY', timeFormat: '24h', voiceURI: '', aiSettings: { apiKey: '', model: 'gemini-2.5-flash' } }
-            this.title = DEFAULT_DATA.title || 'Easy Trip'
-            this.startDate = DEFAULT_DATA.startDate || '2025-09-10'
+            const sourceData = DEFAULT_DATA
+
+            this.days = JSON.parse(JSON.stringify(sourceData.days || []))
+            this.backups = JSON.parse(JSON.stringify(sourceData.backups || []))
+            this.expenses = JSON.parse(JSON.stringify(sourceData.expenses || []))
+            this.travelers = JSON.parse(JSON.stringify(sourceData.travelers || ['我']))
+            this.passes = JSON.parse(JSON.stringify(sourceData.passes || []))
+            this.attractionGuides = JSON.parse(JSON.stringify(sourceData.attractionGuides || DEFAULT_GUIDES))
+            this.settings = { ...sourceData.settings } as any || { currency: 'JPY', timeFormat: '24h', voiceURI: '', aiSettings: { apiKey: '', model: 'gemini-2.5-flash' } }
+            if (!this.settings.currency || this.settings.currency === '') this.settings.currency = 'JPY'
+            if (!this.settings.aiSettings) this.settings.aiSettings = { apiKey: '', model: 'gemini-2.5-flash' }
+
+            this.title = sourceData.title || 'Easy Trip'
+            this.startDate = sourceData.startDate || '2025-09-10'
             this.currencies = {
                 'TWD': { symbol: 'NT$', rate: 0.22, name: '新台幣 (台灣)' },
                 'JPY': { symbol: '¥', rate: 1, name: '日圓 (日本)' }
@@ -369,7 +375,7 @@ export const useTripStore = defineStore('trip', {
             // Initialize default data with default currency and IDs
             this.days.forEach(day => {
                 day.events.forEach(event => {
-                    event.currency = 'JPY'
+                    if (!event.currency) event.currency = 'JPY'
                     if (!event.id) event.id = crypto.randomUUID()
                 })
             })

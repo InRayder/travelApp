@@ -1,5 +1,35 @@
 # 更新日誌 (Changelog)
 
+## [0.2.1] - 2026-01-29
+
+### 新增功能 (New Features)
+- **全局通知系統**: 新增 Pinia 通知 store，支援多種訊息類型 (info, success, warning, error)，可設定自動隱藏時間。
+- **衝突警示通知**: 偵測到行程時間衝突時自動顯示警告通知，提醒使用者檢查紅框標示的項目。
+- **AI 雙模式規劃**: 在設定面板新增兩種 AI 規劃模式：
+  - Excel 轉行程：上傳 Excel 格式行程表自動轉換
+  - AI 智能規劃 (Pro)：根據地點日期由 AI 全新規劃行程
+- **可選欄位優化**: 調整資料型別，多個欄位改為選填，提升資料匯入的容錯性。
+
+### 使用體驗優化 (UX Improvements)
+- **設定面板增強**: 
+  - 範例行程改為具體指示「載入福岡(九州)範例行程」
+  - AI 提示詞切換器，快速在 Excel 轉換與 AI 規劃間切換
+  - 更清晰的步驟說明與提示詞預覽
+- **全局通知元件**: 應用程式頂層加入 GlobalNotification 元件，統一展示各類通知訊息。
+- **文件註解完善**: 為 AI Service 函式加入詳細的 JSDoc 註解，提升程式碼可讀性。
+
+### 資料結構優化 (Data Structure)
+- **Guide 介面**: 將 `original_url`, `media_type`, `user_notes` 改為選填欄位
+- **Day 介面**: 新增可選的 `weatherIcon` 與 `temp` 欄位，為未來天氣整合預留
+- **Event 介面**: `stayInfo.notes` 改為選填
+- **Settings 介面**: `voiceURI` 與 `aiSettings` 改為選填
+- **loadExampleData 增強**: 改善資料載入邏輯，支援更靈活的 null/undefined 處理
+
+### 修正項目 (Fixed)
+- **Guide 生成修復**: 在 EditEventModal 中正確處理 Guide 資料結構，支援 `oldTitle` 參數用於重新命名
+- **資料載入容錯**: 優化 loadExampleData 方法的 null 檢查，確保缺少的欄位會使用默認值
+- **事件貨幣初始化**: 修正載入行程時未初始化事件貨幣欄位的問題
+
 ## [0.2.0] - 2025-12-11
 
 ### 🎬 新增主要功能 (Major Features)

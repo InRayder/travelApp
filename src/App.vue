@@ -4,6 +4,9 @@
     <div class="flex-1 overflow-hidden relative"> <!-- 內距由視圖處理 (Padding handled by views) -->
       <RouterView />
     </div>
+    
+    <GlobalNotification />
+    
     <BottomNav />
     <SettingsModal :isOpen="store.isSettingsOpen" @close="store.setSettingsOpen(false)" />
     <AiAssistantModal 
@@ -39,6 +42,7 @@ import SettingsModal from './components/SettingsModal.vue'
 import AiAssistantModal from './components/AiAssistantModal.vue'
 import InstallPrompt from './components/InstallPrompt.vue'
 import OnboardingModal from './components/OnboardingModal.vue'
+import GlobalNotification from './components/GlobalNotification.vue'
 
 import { SpeedInsights } from "@vercel/speed-insights/vue"
 

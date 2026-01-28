@@ -637,8 +637,12 @@ const generateGuide = async () => {
           tags: data.tags || [],
           highlights: data.highlights || [],
           tips: data.tips || '',
-          link: data.link || '',
-          image: undefined
+          original_url: data.link || '',
+          thumbnail_url: undefined,
+          media_type: 'web',
+          location: { name: form.value.location || '' },
+          user_notes: '',
+          status: 'want_to_go'
         }
       }
       
@@ -653,7 +657,7 @@ const generateGuide = async () => {
   }
 }
 
-const handleGuideSave = (title: string, data: any) => {
+const handleGuideSave = (title: string, data: any, oldTitle?: string) => {
   const guideId = title || `guide_${Date.now()}`
   
   const newGuide: any = {
@@ -663,7 +667,7 @@ const handleGuideSave = (title: string, data: any) => {
   }
 
   // 使用封裝的 action 更新 Guide
-  store.updateGuide(guideId, newGuide)
+  store.updateGuide(guideId, newGuide, oldTitle)
   
   // Link to current event
   form.value.linkedGuide = guideId

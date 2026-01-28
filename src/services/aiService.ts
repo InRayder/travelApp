@@ -1,6 +1,14 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { Guide } from '../stores/trip';
 
+/**
+ * 根據景點描述生成旅遊景點攻略
+ * @param apiKey Gemini API Key
+ * @param modelName 模型名稱
+ * @param text 景點描述
+ * @param url 景點連結
+ * @returns 旅遊景點攻略
+ */
 export async function generateGuideFromContent(
     apiKey: string,
     modelName: string,
@@ -69,6 +77,14 @@ export async function generateGuideFromContent(
     }
 }
 
+/**
+ * 建議景點加入行程的日期和時間
+ * @param apiKey Gemini API Key
+ * @param modelName 模型名稱
+ * @param guide 景點攻略
+ * @param days 行程
+ * @returns 行程日期和時間
+ */
 export async function suggestItineraryPlacement(
     apiKey: string,
     modelName: string,

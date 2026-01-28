@@ -327,9 +327,13 @@
                 </transition>
               </div>
 
-              <button @click="handleLoadExample" class="w-full py-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 font-bold hover:bg-blue-100 flex items-center justify-center gap-2 text-sm">
-                <font-awesome-icon icon="fa-solid fa-book-open" /> 載入範例行程
-              </button>
+              <div class="space-y-2">
+                <label class="block text-xs font-bold text-gray-500">載入範例行程</label>
+                <button @click="handleLoadExample()" class="w-full py-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 font-bold hover:bg-blue-100 flex items-center justify-center gap-2 text-sm">
+                  <font-awesome-icon icon="fa-solid fa-book-open" /> 載入福岡 (九州) 範例行程
+                </button>
+
+              </div>
               <button @click="store.openOnboarding(); emit('close')" class="w-full py-3 rounded-xl bg-orange-50 border border-orange-100 text-orange-600 font-bold hover:bg-orange-100 flex items-center justify-center gap-2 text-sm">
                 <font-awesome-icon icon="fa-solid fa-circle-info" /> 重看導覽介紹
               </button>
@@ -344,14 +348,32 @@
               <ol class="list-decimal list-inside text-gray-600 space-y-1 ml-1">
                 <li>複製下方的 Prompt 指令</li>
                 <li>開啟 ChatGPT / Gemini 等 AI 工具</li>
-                <li>貼上指令，並附上您的 Excel 行程文字</li>
+                <li>貼上指令，{{ selectedAiMode === 'excel' ? '並附上您的 Excel 行程文字' : '告訴 AI 您想去哪裡、旅遊天數與喜好' }}</li>
                 <li>將 AI 產生的 JSON 貼回上方的「匯入備份」</li>
               </ol>
+
+              <!-- Mode Switcher -->
+              <div class="flex bg-gray-200 rounded-lg p-1 gap-1 mb-2">
+                <button 
+                  @click="selectedAiMode = 'excel'" 
+                  class="flex-1 py-1.5 text-xs font-bold rounded-md transition-all flex items-center justify-center gap-1"
+                  :class="selectedAiMode === 'excel' ? 'bg-white shadow text-jp-dark' : 'text-gray-500 hover:text-gray-700'"
+                >
+                  <font-awesome-icon icon="fa-solid fa-file-excel" /> Excel 轉行程
+                </button>
+                <button 
+                  @click="selectedAiMode = 'pro'" 
+                  class="flex-1 py-1.5 text-xs font-bold rounded-md transition-all flex items-center justify-center gap-1"
+                  :class="selectedAiMode === 'pro' ? 'bg-white shadow text-jp-dark' : 'text-gray-500 hover:text-gray-700'"
+                >
+                  <font-awesome-icon icon="fa-solid fa-wand-magic-sparkles" /> AI 智能規劃
+                </button>
+              </div>
               <div class="relative">
                 <textarea 
                   readonly 
                   class="w-full h-32 p-2 rounded border border-gray-300 bg-white text-[10px] font-mono leading-tight resize-none focus:outline-none"
-                  :value="aiPrompt"
+                  :value="displayedPrompt"
                 ></textarea>
                 <button @click="copyPrompt" class="absolute top-2 right-2 bg-jp-dark text-white px-2 py-1 rounded text-[10px] hover:bg-gray-700 transition-colors">
                   {{ copyStatus }}
@@ -390,7 +412,7 @@
 
 <script setup lang="ts">
 
-import { ref, watch, toRef } from 'vue'
+import { ref, watch, toRef, computed } from 'vue'
 import { useTripStore } from '../stores/trip.ts'
 import ConfirmModal from './ConfirmModal.vue'
 import { useDynamicZIndex } from '../composables/useZIndex'
@@ -465,9 +487,9 @@ const handleReset = () => {
 }
 
 const handleLoadExample = () => {
-  openConfirmModal('載入範例', '確定要載入範例行程嗎？目前的資料將被覆蓋。', () => {
-    store.loadExampleData()
-    openAlert('範例行程已載入')
+  openConfirmModal(`載入範例`, `確定要載入福岡範例行程嗎？目前的資料將被覆蓋。`, () => {
+    store.loadExampleData('fukuoka')
+    openAlert(`範例行程已載入`)
     emit('close')
   })
 }
@@ -737,11 +759,120 @@ const removePass = (id: string) => {
   })
 }
 
-// AI Helper Logic
 const showAiHelper = ref(false)
 const copyStatus = ref('複製')
+const selectedAiMode = ref<'excel' | 'pro'>('excel')
 
-const aiPrompt = `請扮演一位專業的旅遊行程規劃助手。
+const SHARED_SCHEMA_DEF = `
+interface TripData {
+  title: string; // 旅遊標題 (例如 "東京 5 天 4 夜")
+  startDate: string; // 開始日期 (格式：YYYY-MM-DD)
+  settings: { 
+    currency: string; // 預設幣別 (例如 "JPY", "USD")
+    timeFormat: '12h' | '24h'; // 時間格式 (12小時制或24小時制)
+  }; 
+  travelers: string[]; // 旅伴清單 (例如 ["我", "旅伴A"])
+  days: Day[]; // 每日行程列表
+  backups: Event[]; // 備案活動清單 (可為空陣列)
+  expenses: Expense[]; // 支出記錄清單 (可為空陣列)
+  attractionGuides: Record<string, Guide>; // 景點深度導覽資料 (Key 為景點名稱)
+}
+
+interface Guide {
+  id: string; // 唯一識別碼 (UUID 格式)
+  color: string; // 背景漸層顏色 (必須是 Tailwind CSS class，例如 "from-pink-500 to-red-600")
+  icon: string; // 圖示類別 (FontAwesome class，例如 "fa-solid fa-torii-gate")
+  desc: string; // 景點簡短介紹 (約 50-100 字)
+  tags: string[]; // 分類標籤 (例如 ["攝影", "美食"])
+  highlights: string[]; // 必看重點或亮點 (3-5 個)
+  tips: string; // 參觀建議或小撇步
+  original_url?: string; // 官方網站或參考來源連結 (選填)
+  thumbnail_url?: string; // 縮圖圖片連結 (選填)
+  media_type?: 'instagram' | 'youtube' | 'web'; // 媒體屬性類別 (選填)
+  location: { 
+    name: string; // 地點描述名稱 (例如 "福岡・太宰府")
+    coordinates?: [number, number]; // 經緯度座標 [lat, lng] (選填)
+    google_maps_id?: string; // Google Maps Place ID (選填)
+  }; 
+  user_notes?: string; // 個人的預計備註或筆記 (選填)
+  status: 'want_to_go' | 'planned' | 'visited'; // 狀態：想去、已規劃、已造訪
+}
+
+interface Day {
+  dateStr: string; // 顯示日期 (例如 "9/10 (Tue)")
+  weatherIcon?: string; // 天氣預報圖示 (FontAwesome class，例如 "fa-solid fa-sun text-orange-400"，選填)
+  temp?: number; // 預估溫度 (選填)
+  events: Event[]; // 當日行程事件列表
+}
+
+interface TransportSchedule {
+  dep: string; // 車次/航班的出發時間 (HH:MM)
+  arr?: string; // 車次/航班的抵達時間 (HH:MM，選填)
+  note?: string; // 班次相關備註 (選填)
+}
+
+interface Transport {
+  type: 'walk' | 'public' | 'express' | 'ferry' | 'taxi' | 'drive' | 'flight'; // 交通方式
+  dep?: string; // 建議出發時間 (選填)
+  arr?: string; // 建議抵達時間 (選填)
+  cost?: number; // 交通花費金額 (選填)
+  direction?: string; // 開行方向或目的地 (例如 "往新宿"，選填)
+  note?: string; // 交通備註說明 (選填)
+  duration?: number; // 預估交通耗時 (單位：分鐘，選填)
+  line?: string; // 路線名稱 (例如 "地鐵銀座線", "機場線"，選填)
+  trainNumber?: string; // 車次編號或航班編號 (例如 "JX800", "回聲號 855"，選填)
+  car?: string; // 車廂等級或座位 (例如 "自由席", "5號車 3A"，選填)
+  platform?: string; // 乘車月台 (選填)
+  flightNo?: string; // 航班編號 (重複欄位，用於具體指明飛機班次，選填)
+  depAirport?: string; // 出發機場代碼 (例如 "TPE", "NRT"，選填)
+  arrAirport?: string; // 抵達機場代碼 (例如 "FUK", "KIX"，選填)
+  company?: string; // 營運公司 (例如 "星宇航空", "JR北海道"，選填)
+  schedules?: TransportSchedule[]; // 相關班次時刻表 (最多 5 筆，選填)
+  passId?: string; // 關聯的交通票券 ID (選填)
+}
+
+interface Event {
+  title: string; // 活動或地點名稱
+  location: string; // 詳細地址或位置說明
+  lat?: number; // 地理座標：緯度 (選填)
+  lng?: number; // 地理座標：經度 (選填)
+  mapUrl?: string; // Google Maps 連結 (選填)
+  category: 'fun' | 'food' | 'shop' | 'stay' | 'transport' | 'flight'; // 活動類別
+  time: string; // 開始時間 (格式：HH:MM)
+  endTime?: string; // 結束時間 (格式：HH:MM，選填)
+  duration?: number; // 持續時間 (單位：分鐘，選填)
+  cost: number; // 該項目的預估花費
+  currency?: string; // 該項目的幣別 (預設為 JPY，選填)
+  notes?: string; // 活動內容備註 (選填)
+  link?: string; // 外部連結或參考網站 (如 Tabelog, 官方網頁，選填)
+  linkedGuide?: string; // 關聯的導覽介面 Key (對應 attractionGuides 中的景點名稱，選填)
+  transports?: Transport[]; // 該活動後的交通訊息 (選填)
+  stayInfo?: { 
+    startDate: string; // 住房開始日期
+    endDate: string; // 住房結束日期
+    checkIn: string; // 入住時間
+    checkOut: string; // 退房時間
+    notes?: string; // 住房相關備註
+  }; // 僅在 category 為 'stay' 時提供 (選填)
+}
+
+interface Expense {
+    id: string; // 支出記錄唯一識別碼
+    title: string; // 款項名稱
+    amount: number; // 金額
+    currency: string; // 幣別
+    category: string; // 支出分類
+    date: string; // 日期 (YYYY-MM-DD)
+    payer: string; // 支出者名稱
+    split: string[]; // 分攤者清單 (例如 ["我", "旅伴A"])
+    splitMethod?: 'equal' | 'exact' | 'percent' | 'shares' | 'adjustment' | 'average' | 'custom'; // 拆帳方式 (選填)
+    involved?: string[]; // 實際參與分攤的人員 (選填)
+    customShares?: Record<string, number>; // 自定義分攤權重或比例 (選填)
+}
+`
+
+
+const EXCEL_PROMPT = `請扮演一位專業的旅遊行程規劃助手。
 我會提供給你一份 Excel 或文字格式的行程表資料。請依照以下步驟協助我建立行程檔案，不要直接輸出 JSON：
 
 ### 步驟一：確認互動模式
@@ -799,121 +930,51 @@ const aiPrompt = `請扮演一位專業的旅遊行程規劃助手。
 ### JSON Schema 規範 (TypeScript 定義)：
 
 \`\`\`typescript
-interface TripData {
-  title: string; // 旅遊標題
-  startDate: string; // 開始日期 (YYYY-MM-DD)
-  settings: { currency: string; timeFormat?: '12h' | '24h' }; // 預設 "JPY", "24h"
-  travelers: string[]; // 預設 ["我"]
-  days: Day[]; // 每日行程
-  backups: Event[]; // 備案 (可為空陣列)
-  expenses: Expense[]; // 支出 (可為空陣列)
-  attractionGuides: Record<string, Guide>; // 景點深度導覽 (Key 為景點名稱)
-}
-
-interface Guide {
-  id: string; // Unique identifier (UUID)
-  color: string; // 必須是 Tailwind CSS 漸層 class (e.g. "from-pink-500 to-red-600")。可用顏色：slate, gray, zinc, neutral, stone, red, orange, amber, yellow, lime, green, emerald, teal, cyan, sky, blue, indigo, violet, purple, fuchsia, pink, rose。
-  icon: string; // 圖示 (FontAwesome), e.g., "fa-solid fa-torii-gate"
-  desc: string; // 景點介紹 (約 50-100 字)
-  tags: string[]; // 標籤 (3-5 個)
-  highlights: string[]; // 必看重點 (3 個)
-  tips: string; // 參觀小撇步
-  original_url: string; // 官方網站或相關連結
-  thumbnail_url?: string; // 背景圖片連結 (請搜尋免費圖庫)
-  media_type: 'instagram' | 'youtube' | 'web'; // 媒體類型
-  location: { 
-    name: string;
-    coordinates?: [number, number];
-    google_maps_id?: string;
-  }; // 地點名稱 (e.g. "福岡・太宰府")
-  user_notes: string; // 個人化筆記 (e.g. "必吃梅枝餅")
-  status: 'want_to_go' | 'planned' | 'visited'; // 預設 'planned'
-}
-
-interface Day {
-  dateStr: string; // 顯示日期格式，例如 "9/10 (Tue)"
-  weatherIcon: string; // 預設 "fa-solid fa-sun text-orange-400"
-  temp: number; // 預設 25
-  events: Event[]; // 當日活動列表
-}
-
-interface TransportSchedule {
-  dep: string;        // 出發時間 (HH:MM)
-  arr?: string;       // 抵達時間 (HH:MM)
-  note?: string;      // 備註
-}
-
-interface Transport {
-  type: 'walk' | 'public' | 'express' | 'ferry' | 'taxi' | 'drive' | 'flight';
-  // Common
-  dep?: string; // 出發時間
-  arr?: string; // 抵達時間
-  cost?: number;
-  direction?: string; // 開往方向 (e.g. 往新宿)
-  note?: string; // 交通備註
-  duration?: number; // 預估時間 (分鐘)
-  
-  // Public (Bus/Subway)
-  line?: string;      // 路線 (e.g. 機場線, 50號公車)
-  
-  // Express (Shinkansen/Train)
-  trainNumber?: string; // 班次 (e.g. 回聲號 855)
-  car?: string;         // 車廂/座位 (e.g. 自由席, 5號車 3A) 或 租車車型
-  platform?: string;    // 月台
-  
-  // Flight (飛機)
-  flightNo?: string;    // 航班編號 (e.g. IT240)
-  depAirport?: string;  // 出發機場 (e.g. TPE)
-  arrAirport?: string;  // 抵達機場 (e.g. FUK)
-  
-  // Ferry / Taxi / Drive / Public / Flight
-  company?: string;     // 營運公司 / 船公司 / 車行 / 租車公司 / 航空公司
-
-  // Schedules (Express & Ferry)
-  schedules?: TransportSchedule[]; // 前後班次 (Max 5)
-  
-  passId?: string; // 使用的票券 ID
-}
-
-interface Event {
-  title: string; // 活動名稱
-  location: string; // 地點
-  lat?: number; // 緯度 (e.g. 33.5902)
-  lng?: number; // 經度 (e.g. 130.4207)
-  mapUrl?: string; // Google Maps 連結
-  category: 'fun' | 'food' | 'shop' | 'stay' | 'transport' | 'flight';
-  time: string; // 開始時間 (HH:MM)
-  endTime?: string; // 結束時間 (HH:MM)
-  duration?: number; // 持續時間 (分鐘)
-  cost: number; // 預估費用 (日幣)
-  currency?: string; // 預設 "JPY"
-  notes?: string; // 備註
-  link?: string; // 相關連結
-  linkedGuide?: string; // 關聯的導覽 ID (Key of attractionGuides)
-  transports?: Transport[]; // 交通資訊 (含航班資訊)
-}
-
-interface Expense {
-    id: string;
-    title: string;
-    amount: number;
-    currency: string;
-    category: string;
-    date: string;
-    payer: string;
-    split: string[];
-    splitMethod?: 'equal' | 'exact' | 'percent' | 'shares' | 'adjustment' | 'average' | 'custom';
-    involved?: string[];
-    customShares?: Record<string, number>;
-}
+${SHARED_SCHEMA_DEF}
 \`\`\`
 
-請等待我提供行程資料後再開始轉換。`
+請待我提供行程資料後再開始轉換。`;
+
+const PRO_PLANNER_PROMPT = `## 專業旅遊行程規劃助手 (AI Pro Planner)
+
+### 角色設定
+你是一位精通全球旅遊規劃、交通接駁、美食搜尋與地圖地理資訊的專業助手。你擅長從零開始，根據用戶提供的**地點**與**日期**，規劃出一份邏輯嚴密、細節豐富且符合開發者格式（JSON）的完整行程。
+
+### 步驟一：啟動與模式確認
+當用戶提供「地點」與「日期」後，請先執行以下操作：
+1. **確認互動模式**：詢問用戶希望使用哪種方式進行確認：
+* **1. 逐日確認模式**：一天一天詳細討論細節，適合需要精細調整的行程。
+* **2. 概略確認模式**：你先根據地點天數生成完整草案，用戶一次性檢查。
+
+2. **初步構想**：主動提供一個基於該地點的 300 字以內行程亮點概述（如：當地季節特色、必訪區域）。
+
+### 步驟二：資料檢查與補全 (互動階段)
+根據模式進行檢查，重點包含：
+1. 缺少的確切時間 (Time) 與精確座標 (\`lat\`, \`lng\`)。
+2. 交通方式 (Transport) 與細節（短程含在活動內，長程獨立事件）。
+3. 預估費用 (Cost) 與 Tabelog 連結 (Food)。
+4. 景點導覽建議：以 **Markdown 表格** 呈現「名稱、Tailwind 漸層色、Icon、簡介、重點、小撇步」。
+5. 雨天備案：主動建議 2-3 個附近的室內景點。
+
+### 步驟三：生成 JSON (最終產出)
+當用戶確認資訊後，請依據最終決定生成 JSON。
+
+**IMPORTANT:**
+Directly output the JSON valid for the \`TripData\` interface. Do NOT wrap it in any action object.
 
 
+#### JSON Schema 規範 (TypeScript 定義)：
+\`\`\`typescript
+${SHARED_SCHEMA_DEF}
+\`\`\`
+`;
+
+const displayedPrompt = computed(() => {
+  return selectedAiMode.value === 'excel' ? EXCEL_PROMPT : PRO_PLANNER_PROMPT
+})
 
 const copyPrompt = () => {
-  navigator.clipboard.writeText(aiPrompt).then(() => {
+  navigator.clipboard.writeText(displayedPrompt.value).then(() => {
     copyStatus.value = '已複製！'
     setTimeout(() => {
       copyStatus.value = '複製'

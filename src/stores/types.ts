@@ -15,15 +15,15 @@ export interface Guide {
     tags: string[];     // 標籤
     highlights: string[]; // 必看重點
     tips: string;       // 參觀小撇步
-    original_url: string; // 原始連結 (was link)
+    original_url?: string; // 原始連結 (was link)
     thumbnail_url?: string; // 封面圖片連結 (was image)
-    media_type: 'instagram' | 'youtube' | 'web'; // 媒體類型
+    media_type?: 'instagram' | 'youtube' | 'web'; // 媒體類型
     location: {         // 地理位置
         name: string;
         coordinates?: [number, number];
         google_maps_id?: string;
     };
-    user_notes: string; // 個人化筆記
+    user_notes?: string; // 個人化筆記
     status: 'want_to_go' | 'planned' | 'visited'; // 狀態
 }
 
@@ -90,7 +90,7 @@ export interface Event {
         endDate: string;
         checkIn: string;
         checkOut: string;
-        notes: string;
+        notes?: string;
     };
     discounts?: { name: string; url: string }[];
     ticketLink?: string;
@@ -98,6 +98,8 @@ export interface Event {
 
 export interface Day {
     dateStr: string;
+    weatherIcon?: string;
+    temp?: number;
     events: Event[];
     backups?: Event[]; // Legacy support
 }
@@ -133,8 +135,8 @@ export interface Currency {
 export interface Settings {
     currency: string;
     timeFormat: '12h' | '24h';
-    voiceURI: string;
-    aiSettings: {
+    voiceURI?: string;
+    aiSettings?: {
         apiKey: string;
         model: string;
         customPrompt?: string;

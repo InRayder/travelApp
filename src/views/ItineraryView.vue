@@ -310,6 +310,7 @@ import { formatTime, addMinutes, diffMinutes, parseTime, stringifyTime } from '.
 // @ts-ignore
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { useNotificationStore } from '../stores/notification'
 
 const isFooterExpanded = ref(false)
 import { storeToRefs } from 'pinia'
@@ -329,7 +330,8 @@ import { useConfirmModal } from '../composables/useConfirmModal'
 import type { Event, Expense, Transport } from '../stores/trip.ts'
 
 const store = useTripStore()
-const { days, attractionGuides } = storeToRefs(store)
+const notificationStore = useNotificationStore()
+const { days, attractionGuides, eventConflictIds, transportConflictIds } = storeToRefs(store)
 
 const currentDayIndex = ref(0)
 const eventsList = ref<HTMLElement | null>(null)
@@ -620,6 +622,26 @@ onUnmounted(() => {
 watch(currentDayIndex, () => {
   nextTick(() => initSortable())
 })
+
+// Watch for conflicts and notify
+watch(
+  [() => store.eventConflictIds.length, () => store.transportConflictIds.length], 
+  ([newE, newT], oldValues) => {
+    // Safely handle oldValues which can be undefined on first immediate run
+    const safeOldVals = oldValues || [0, 0]
+    const preE = safeOldVals[0] || 0
+    const preT = safeOldVals[1] || 0
+    
+    const hasConflict = newE > 0 || newT > 0
+    const hadConflict = preE > 0 || preT > 0
+    
+    // Notify if we have conflicts and (it's new OR it's the first immediate check)
+    if (hasConflict && !hadConflict) {
+      notificationStore.add('偵測到行程時間衝突，請檢查紅框標示的項目。', 'warning')
+    }
+  }, 
+  { immediate: true }
+)
 
 // --- 模態視窗邏輯 (Modal Logic) ---
 
