@@ -537,7 +537,8 @@ const sendMessage = async () => {
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({ 
       model: modelName,
-      systemInstruction: getSystemInstruction()
+      systemInstruction: getSystemInstruction(),
+      tools: [{ googleSearch: {} } as any]
     })
 
     const chat = model.startChat({

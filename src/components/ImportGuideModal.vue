@@ -252,7 +252,24 @@ watch(() => props.isOpen, (newVal) => {
     reset()
     if (props.initialData) {
       form.url = props.initialData.url || ''
-      form.text = [props.initialData.title, props.initialData.text].filter(Boolean).join('\n\n')
+      let combinedText = [props.initialData.title, props.initialData.text].filter(Boolean).join('\n\n')
+      
+      // Use RegExp to find URLs in the combined text
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      const urls = combinedText.match(urlRegex);
+      
+      if (urls && urls.length > 0) {
+        // If form.url was empty, take the first extracted URL
+        if (!form.url) {
+          form.url = urls[0];
+        }
+        // Clean up the text by removing the URLs
+        urls.forEach(u => {
+          combinedText = combinedText.replace(u, '').trim();
+        });
+      }
+      
+      form.text = combinedText;
     }
   }
 }, { immediate: true })

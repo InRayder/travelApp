@@ -200,7 +200,10 @@ const handleAiAction = async (mode: 'translate' | 'scenario') => {
       ? 'gemini-2.5-flash-lite' 
       : (tripStore.settings.aiSettings.model || 'gemini-2.5-flash')
       
-    const model = genAI.getGenerativeModel({ model: modelName })
+    const model = genAI.getGenerativeModel({ 
+      model: modelName,
+      tools: [{ googleSearch: {} } as any]
+    })
 
     let prompt = ''
     if (mode === 'translate') {

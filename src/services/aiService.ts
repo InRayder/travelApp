@@ -22,7 +22,7 @@ export async function generateGuideFromContent(
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
         model: modelName || 'gemini-2.5-flash',
-        tools: [{ googleSearchRetrieval: {} }]
+        tools: [{ googleSearch: {} } as any]
     });
 
     const prompt = `
@@ -96,6 +96,7 @@ export async function suggestItineraryPlacement(
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
         model: modelName || 'gemini-1.5-flash',
+        tools: [{ googleSearch: {} } as any]
     });
 
     const itinerarySummary = days.map((day, index) => {

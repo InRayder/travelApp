@@ -241,7 +241,8 @@ Constraints:
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({ 
       model: modelName,
-      systemInstruction: systemPrompt
+      systemInstruction: systemPrompt,
+      tools: [{ googleSearch: {} } as any]
     })
 
     const result = await model.generateContent(
