@@ -413,7 +413,7 @@
 <script setup lang="ts">
 
 import { ref, watch, toRef, computed } from 'vue'
-import { useTripStore } from '../stores/trip.ts'
+import { useTripStore, getTripStorageKey } from '../stores/trip.ts'
 import ConfirmModal from './ConfirmModal.vue'
 import { useDynamicZIndex } from '../composables/useZIndex'
 import pkg from '../../package.json'
@@ -498,7 +498,7 @@ const showExportOptions = ref(false)
 const exportCopyStatus = ref('複製內容')
 
 const getFormattedData = () => {
-  const rawData = localStorage.getItem('easy_trip_data_v7')
+  const rawData = localStorage.getItem(getTripStorageKey(store.id))
   if (!rawData) return null
   
   try {
@@ -584,9 +584,9 @@ const processImportData = (jsonString: string) => {
            }
          })
          // Re-stringify to save
-         localStorage.setItem('easy_trip_data_v7', JSON.stringify(parsedData))
+         localStorage.setItem(getTripStorageKey(store.id), JSON.stringify(parsedData))
        } else {
-         localStorage.setItem('easy_trip_data_v7', finalData)
+         localStorage.setItem(getTripStorageKey(store.id), finalData)
        }
        
        store.loadData()

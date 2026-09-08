@@ -166,10 +166,32 @@ export interface ChecklistCategory {
 }
 
 // ============================================
+// 多行程與雲端同步相關類型 (Multi-Trip / Cloud Sync Types)
+// ============================================
+
+/**
+ * 行程索引項目：僅包含「行程列表」需要顯示與比對權限的輕量欄位，
+ * 儲存於本機的行程索引（未來對應 Firestore `trips/{tripId}` 文件的 metadata 子集）。
+ * ownerId/collaborators 在尚未接上 Firebase Auth 前，一律為本機佔位值 'local'/[]，
+ * 待帳號系統完成後的資料遷移流程會把它們換成真實的使用者 uid。
+ */
+export interface TripMeta {
+    id: string;
+    title: string;
+    ownerId: string;
+    collaborators: string[];
+    createdAt: string;
+    updatedAt: string;
+}
+
+// ============================================
 // Store 狀態類型 (Store State Type)
 // ============================================
 
 export interface TripState {
+    id: string;
+    ownerId: string;
+    collaborators: string[];
     title: string;
     startDate: string;
     settings: Settings;

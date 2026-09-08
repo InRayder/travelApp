@@ -36,6 +36,7 @@
 import { onMounted, onBeforeUnmount } from 'vue'
 import { RouterView } from 'vue-router'
 import { useTripStore } from './stores/trip.ts'
+import { useTripListStore } from './stores/tripList.ts'
 import AppHeader from './components/AppHeader.vue'
 import BottomNav from './components/BottomNav.vue'
 import SettingsModal from './components/SettingsModal.vue'
@@ -47,6 +48,7 @@ import GlobalNotification from './components/GlobalNotification.vue'
 import { SpeedInsights } from "@vercel/speed-insights/vue"
 
 const store = useTripStore()
+const tripListStore = useTripListStore()
 
 const handleInstallPrompt = (e: Event) => {
   // Prevent the mini-infobar from appearing on mobile
@@ -56,7 +58,9 @@ const handleInstallPrompt = (e: Event) => {
 }
 
 onMounted(() => {
-  store.loadData()
+  // 先讀取（或建立）多行程索引，取得目前作用中的行程 id，再載入該行程的實際資料
+  tripListStore.loadIndex()
+  store.loadData(tripListStore.activeTripId)
   store.checkOnboarding()
   window.addEventListener('beforeinstallprompt', handleInstallPrompt)
 })

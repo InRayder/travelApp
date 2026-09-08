@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { validateDaySchedule } from '../utils/TimeAdjustmentUtil'
+import { useTripListStore, getTripStorageKey, LEGACY_TRIP_ID } from './tripList'
 import type {
     Guide,
     TransportPass,
@@ -25,10 +26,10 @@ export type {
     Category,
     ChecklistItem,
     ChecklistCategory,
-    TripState
+    TripState,
+    TripMeta
 } from './types'
-
-const STORAGE_KEY = 'easy_trip_data_v7'
+export { useTripListStore, getTripStorageKey, LEGACY_TRIP_ID } from './tripList'
 
 
 // Import data from dedicated files
@@ -42,6 +43,9 @@ const DEFAULT_DATA = EXAMPLE_TRIP
 
 export const useTripStore = defineStore('trip', {
     state: (): TripState => ({
+        id: LEGACY_TRIP_ID,
+        ownerId: 'local',
+        collaborators: [],
         title: '東京五天四夜之旅',
         startDate: new Date().toISOString().slice(0, 10),
         settings: {
@@ -142,16 +146,21 @@ export const useTripStore = defineStore('trip', {
             this.isOnboardingOpen = true
         },
 
-        loadData() {
-            let saved = localStorage.getItem(STORAGE_KEY)
-            if (!saved) {
-                // Migration: Check for old key
+        loadData(tripId?: string) {
+            const id = tripId || this.id || LEGACY_TRIP_ID
+            this.id = id
+
+            let saved = localStorage.getItem(getTripStorageKey(id))
+            if (!saved && id === LEGACY_TRIP_ID) {
+                // Migration: Check for old key (only applies to the original single-trip data)
                 saved = localStorage.getItem('kyushu_trip_data_v7')
             }
 
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved)
+                    this.ownerId = parsed.ownerId || 'local'
+                    this.collaborators = parsed.collaborators || []
                     this.days = parsed.days || DEFAULT_DATA.days
                     this.expenses = parsed.expenses || DEFAULT_DATA.expenses
                     this.travelers = parsed.travelers || DEFAULT_DATA.travelers
@@ -313,6 +322,9 @@ export const useTripStore = defineStore('trip', {
         },
         saveData() {
             const data = {
+                id: this.id,
+                ownerId: this.ownerId,
+                collaborators: this.collaborators,
                 days: this.days,
                 backups: this.backups,
                 expenses: this.expenses,
@@ -325,11 +337,48 @@ export const useTripStore = defineStore('trip', {
                 currencies: this.currencies,
                 checklists: this.checklists
             }
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+            const id = this.id || LEGACY_TRIP_ID
+            localStorage.setItem(getTripStorageKey(id), JSON.stringify(data))
+            // 讓行程索引（列表用）的標題/更新時間跟著同步，供切換行程的 UI 顯示
+            useTripListStore().touchTrip(id, this.title)
+        },
+        /** 建立一筆全新的空白行程資料（不同於 loadExampleData 的範例資料），供「新增行程」流程使用 */
+        initBlankTrip(id: string, title: string) {
+            const currentApiKey = this.settings.aiSettings?.apiKey || ''
+            const currentModel = this.settings.aiSettings?.model || 'gemini-2.5-flash'
+
+            this.id = id
+            this.ownerId = 'local'
+            this.collaborators = []
+            this.title = title || '未命名行程'
+            this.startDate = new Date().toISOString().split('T')[0]
+            this.days = []
+            this.backups = []
+            this.expenses = []
+            this.travelers = ['我']
+            this.passes = []
+            this.attractionGuides = {}
+            this.checklists = []
+            this.settings = {
+                currency: 'JPY',
+                timeFormat: '24h',
+                voiceURI: '',
+                aiSettings: {
+                    apiKey: currentApiKey,
+                    model: currentModel
+                }
+            }
+            this.currencies = {
+                'TWD': { symbol: 'NT$', rate: 0.22, name: '新台幣 (台灣)' },
+                'JPY': { symbol: '¥', rate: 1, name: '日圓 (日本)' }
+            }
+            this.saveData()
         },
         loadExampleData() {
             const sourceData = DEFAULT_DATA
 
+            this.ownerId = 'local'
+            this.collaborators = []
             this.days = JSON.parse(JSON.stringify(sourceData.days || []))
             this.backups = JSON.parse(JSON.stringify(sourceData.backups || []))
             this.expenses = JSON.parse(JSON.stringify(sourceData.expenses || []))
