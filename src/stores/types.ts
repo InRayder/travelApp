@@ -140,6 +140,10 @@ export interface Settings {
         apiKey: string;
         model: string;
         customPrompt?: string;
+        /** 是否啟用 Google 即時搜尋（Grounding with Google Search）。
+         *  免費版 API Key 對此功能的配額非常有限（尤其 Gemini 3 系列），
+         *  使用者可於設定中關閉以節省配額。未設定時預設為 true（維持既有行為）。 */
+        enableGoogleSearch?: boolean;
     };
 }
 

@@ -140,7 +140,8 @@ import { ref, computed } from 'vue'
 import { useConversationStore } from '../stores/conversations'
 import { useTripStore } from '../stores/trip.ts'
 import ConversationCard from '../components/ConversationCard.vue'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenAI } from '@google/genai'
+import { FAST_AI_MODEL, resolveAiModel, getAiErrorMessage, buildAiTools } from '../services/aiModels'
 
 const store = useConversationStore()
 const tripStore = useTripStore()
@@ -193,17 +194,12 @@ const handleAiAction = async (mode: 'translate' | 'scenario') => {
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(tripStore.settings.aiSettings.apiKey)
+    const genAI = new GoogleGenAI({ apiKey: tripStore.settings.aiSettings.apiKey })
     
     // Use fastest model for translation, otherwise use user setting
     const modelName = mode === 'translate' 
-      ? 'gemini-2.5-flash-lite' 
-      : (tripStore.settings.aiSettings.model || 'gemini-2.5-flash')
-      
-    const model = genAI.getGenerativeModel({ 
-      model: modelName,
-      tools: [{ googleSearch: {} } as any]
-    })
+      ? FAST_AI_MODEL
+      : resolveAiModel(tripStore.settings.aiSettings.model)
 
     let prompt = ''
     if (mode === 'translate') {
@@ -223,12 +219,16 @@ const handleAiAction = async (mode: 'translate' | 'scenario') => {
       `
     }
 
-    const result = await model.generateContent(prompt)
-    const response = result.response.text().trim()
+    const result = await genAI.models.generateContent({
+      model: modelName,
+      contents: prompt,
+      config: { tools: buildAiTools(tripStore.settings.aiSettings.enableGoogleSearch) }
+    })
+    const response = (result.text || '').trim()
     newPhrase.value.japanese = response
   } catch (e) {
     console.error('AI Generation Error:', e)
-    alert('生成失敗，請稍後再試: ' + (e as Error).message)
+    alert(getAiErrorMessage(e))
   } finally {
     isTranslating.value = false
     isGenerating.value = false

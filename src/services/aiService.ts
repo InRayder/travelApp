@@ -1,5 +1,6 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import type { Guide } from '../stores/trip';
+import { resolveAiModel, getAiErrorMessage, buildAiTools } from './aiModels';
 
 /**
  * 根據景點描述生成旅遊景點攻略
@@ -7,23 +8,21 @@ import type { Guide } from '../stores/trip';
  * @param modelName 模型名稱
  * @param text 景點描述
  * @param url 景點連結
+ * @param enableGoogleSearch 是否啟用 Google 即時搜尋（預設開啟）
  * @returns 旅遊景點攻略
  */
 export async function generateGuideFromContent(
     apiKey: string,
     modelName: string,
     text: string,
-    url: string
+    url: string,
+    enableGoogleSearch?: boolean
 ): Promise<Guide> {
     if (!apiKey) {
         throw new Error('請先在設定中輸入 Gemini API Key');
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-        model: modelName || 'gemini-2.5-flash',
-        tools: [{ googleSearch: {} } as any]
-    });
+    const genAI = new GoogleGenAI({ apiKey });
 
     const prompt = `
     你是一個專業的旅遊規劃師。請根據以下提供的內容（可能包含社群貼文文字與連結），分析並整理出一份詳細的旅遊景點攻略。
@@ -48,9 +47,12 @@ export async function generateGuideFromContent(
     `;
 
     try {
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        let text = response.text();
+        const result = await genAI.models.generateContent({
+            model: resolveAiModel(modelName),
+            contents: prompt,
+            config: { tools: buildAiTools(enableGoogleSearch) }
+        });
+        let text = result.text || '';
         // Remove markdown code blocks if present
         text = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
@@ -71,9 +73,9 @@ export async function generateGuideFromContent(
             user_notes: data.user_notes || '',
             status: 'want_to_go'
         };
-    } catch (error: any) {
+    } catch (error) {
         console.error('AI Generation Error:', error);
-        throw new Error(`AI 分析失敗: ${error.message || '未知錯誤'}`);
+        throw new Error(getAiErrorMessage(error));
     }
 }
 
@@ -83,21 +85,19 @@ export async function generateGuideFromContent(
  * @param modelName 模型名稱
  * @param guide 景點攻略
  * @param days 行程
+ * @param enableGoogleSearch 是否啟用 Google 即時搜尋（預設開啟）
  * @returns 行程日期和時間
  */
 export async function suggestItineraryPlacement(
     apiKey: string,
     modelName: string,
     guide: Guide & { title: string },
-    days: any[]
+    days: any[],
+    enableGoogleSearch?: boolean
 ): Promise<{ dayIndex: number; reason: string; suggestedTime?: string }> {
     if (!apiKey) throw new Error('請先設定 API Key');
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-        model: modelName || 'gemini-1.5-flash',
-        tools: [{ googleSearch: {} } as any]
-    });
+    const genAI = new GoogleGenAI({ apiKey });
 
     const itinerarySummary = days.map((day, index) => {
         const events = day.events.map((e: any) => `${e.time} ${e.title} (${e.location})`).join(', ');
@@ -124,13 +124,16 @@ export async function suggestItineraryPlacement(
     `;
 
     try {
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        let text = response.text();
+        const result = await genAI.models.generateContent({
+            model: resolveAiModel(modelName),
+            contents: prompt,
+            config: { tools: buildAiTools(enableGoogleSearch) }
+        });
+        let text = result.text || '';
         text = text.replace(/```json/g, '').replace(/```/g, '').trim();
         return JSON.parse(text);
     } catch (error) {
         console.error('AI Suggestion Error:', error);
-        return { dayIndex: 0, reason: 'AI 無法分析，請自行選擇', suggestedTime: '' };
+        return { dayIndex: -1, reason: getAiErrorMessage(error), suggestedTime: '' };
     }
 }

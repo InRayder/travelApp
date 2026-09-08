@@ -12,6 +12,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      workbox: {
+        // @google/genai 使 index 主 chunk 略超過預設 2MB 上限，故放寬快取限制
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024
+      },
       manifest: {
         name: 'Easy Trip',
         short_name: 'Easy Trip',

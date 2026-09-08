@@ -138,7 +138,8 @@ watch(() => props.isOpen, async (newVal) => {
                 store.settings.aiSettings.apiKey,
                 store.settings.aiSettings.model || '',
                 props.guide,
-                store.days
+                store.days,
+                store.settings.aiSettings.enableGoogleSearch
             )
             
             aiReason.value = result.reason

@@ -173,7 +173,8 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTripStore } from '../stores/trip'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenAI } from '@google/genai'
+import { resolveAiModel, getAiErrorMessage, buildAiTools } from '../services/aiModels'
 
 const router = useRouter()
 const store = useTripStore()
@@ -207,7 +208,7 @@ const generateScript = async () => {
 
   try {
     const apiKey = store.settings.aiSettings?.apiKey
-    const modelName = store.settings.aiSettings?.model || 'gemini-2.5-flash'
+    const modelName = resolveAiModel(store.settings.aiSettings?.model)
 
     if (!apiKey) throw new Error('API Key not found')
 
@@ -238,18 +239,17 @@ Constraints:
 4. Include a variety of shot types (wide, medium, close-up).
 5. Output ONLY the JSON array, nothing else.`
 
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ 
+    const genAI = new GoogleGenAI({ apiKey })
+    const result = await genAI.models.generateContent({
       model: modelName,
-      systemInstruction: systemPrompt,
-      tools: [{ googleSearch: {} } as any]
+      contents: `Here is the itinerary:\n${JSON.stringify(simplifiedItinerary, null, 2)}`,
+      config: {
+        systemInstruction: systemPrompt,
+        tools: buildAiTools(store.settings.aiSettings?.enableGoogleSearch)
+      }
     })
 
-    const result = await model.generateContent(
-      `Here is the itinerary:\n${JSON.stringify(simplifiedItinerary, null, 2)}`
-    )
-
-    const responseText = result.response.text()
+    const responseText = result.text || ''
     
     // Parse JSON from response
     const jsonMatch = responseText.match(/\[[\s\S]*\]/)
@@ -262,7 +262,7 @@ Constraints:
 
   } catch (e: any) {
     console.error('Vlog Script Error:', e)
-    error.value = e.message || '生成失敗，請稍後再試'
+    error.value = getAiErrorMessage(e)
   } finally {
     isLoading.value = false
   }

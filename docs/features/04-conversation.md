@@ -26,10 +26,10 @@
   - 新增/編輯對話 Modal：整合輸入框與 AI 翻譯／生成按鈕的畫面。
 
 ### 2.2 核心技術實作
-1. **AI 雙向溝通實作 (Google Generative AI)**：
-   - 當使用者點擊「翻譯」按鈕，系統會使用 `gemini-2.5-flash-lite` 模型，透過嚴格的 System Instruction 要求僅回傳翻譯後的短句。
-   - 若點擊「AI 情境推薦」，則會將使用者的中文放入情境 Prompt：`"Generate a natural, polite Japanese phrase that a traveler would say in this situation: [Input]"`。
-   - 並對 API 請求加上防呆與錯誤攔截（例如未配置 API Key 則 fallback 開啟 Google Translate 預填連結）。
+1. **AI 雙向溝通實作 (Google Gen AI SDK)**：
+   - 當使用者點擊「翻譯」按鈕，系統固定使用 `FAST_AI_MODEL`（`src/services/aiModels.ts` 中定義，目前為 `gemini-2.5-flash-lite`），透過嚴格的 System Instruction 要求僅回傳翻譯後的短句。
+   - 若點擊「AI 情境推薦」，則使用使用者於設定中選擇的模型，將中文放入情境 Prompt：`"Generate a natural, polite Japanese phrase that a traveler would say in this situation: [Input]"`。
+   - `googleSearch` 工具是否啟用依「設定」中的開關而定（`buildAiTools()`），並對 API 請求加上防呆與錯誤攔截（例如未配置 API Key 則 fallback 開啟 Google Translate 預填連結；API 錯誤則透過 `getAiErrorMessage()` 轉譯為可理解的中文說明）。
 2. **Web Speech API 朗讀引擎**：
    - 使用瀏覽器原生的 `window.speechSynthesis`。
    - 建立 `SpeechSynthesisUtterance` 物件，並將 `lang` 強制設定為 `'ja-JP'`。

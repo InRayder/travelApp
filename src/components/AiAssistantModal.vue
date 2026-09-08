@@ -251,8 +251,9 @@ import { ref, computed, watch, nextTick, toRef } from 'vue'
 import { useTripStore } from '../stores/trip'
 import { useConversationStore } from '../stores/conversations'
 import { TIME_ADJUSTMENT_AI_DOCS } from '../utils/TimeAdjustmentUtil'
+import { resolveAiModel, getAiErrorMessage, buildAiTools } from '../services/aiModels'
 import ConfirmModal from './ConfirmModal.vue'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenAI } from '@google/genai'
 import MarkdownIt from 'markdown-it'
 import { useDynamicZIndex } from '../composables/useZIndex'
 
@@ -530,26 +531,25 @@ const sendMessage = async () => {
 
   try {
     const apiKey = store.settings.aiSettings?.apiKey
-    const modelName = store.settings.aiSettings?.model || 'gemini-2.5-flash'
+    const modelName = resolveAiModel(store.settings.aiSettings?.model)
     
     if (!apiKey) throw new Error('API Key not found')
 
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ 
+    const genAI = new GoogleGenAI({ apiKey })
+    const chat = genAI.chats.create({
       model: modelName,
-      systemInstruction: getSystemInstruction(),
-      tools: [{ googleSearch: {} } as any]
-    })
-
-    const chat = model.startChat({
+      config: {
+        systemInstruction: getSystemInstruction(),
+        tools: buildAiTools(store.settings.aiSettings?.enableGoogleSearch)
+      },
       history: messages.value.map(m => ({
         role: m.role,
         parts: [{ text: m.text }]
       }))
     })
 
-    const result = await chat.sendMessage(userMsg)
-    const rawResponse = result.response.text()
+    const result = await chat.sendMessage({ message: userMsg })
+    const rawResponse = result.text || ''
     
     // Handle potential actions
     const processed = handleAiAction(rawResponse)
@@ -563,7 +563,7 @@ const sendMessage = async () => {
 
   } catch (e: any) {
     console.error('AI Error:', e)
-    error.value = e.message || '發生錯誤，請檢查 API Key 或網路連線'
+    error.value = getAiErrorMessage(e)
   } finally {
     isLoading.value = false
   }

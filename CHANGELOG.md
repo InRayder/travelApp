@@ -1,5 +1,17 @@
 # 更新日誌 (Changelog)
 
+## [0.2.3] - 2026-08-29
+
+### AI 架構重構 (AI Refactor)
+- **AI 模型統一管理**: 新增 `src/services/aiModels.ts`，集中管理所有可用的 Gemini 模型版本、預設模型、快速模型與錯誤訊息轉譯邏輯，取代過去散落在各元件中的模型字串硬編碼。
+- **SDK 升級**: 將 `@google/generative-ai`（已標記為前代 SDK）全面遷移至官方最新的 `@google/genai`，統一透過 `GoogleGenAI` 客戶端呼叫 `models.generateContent` 與 `chats.create`。
+- **模型清單更新**: 依穩定性排序模型選單，優先推薦穩定版（`gemini-2.5-flash` / `flash-lite` / `pro`），並將 Preview 版本（`gemini-3.7-flash`、`gemini-3.1-pro-preview`）標示「免費額度有限」提示。
+- **錯誤訊息可讀化**: 新增 `getAiErrorMessage()`，將 Gemini API 回傳的 JSON 錯誤（如 429 配額用盡、401/403 金鑰無效、404 模型不存在）轉換為可理解、可採取行動的中文說明，取代直接顯示原始錯誤。
+- **Google 搜尋可選開關**: 「設定」新增「Google 即時搜尋」開關，讓使用者可視需求關閉 `googleSearch` 工具以節省免費版配額，預設維持開啟。
+
+### 建置設定調整 (Build Config)
+- **PWA 快取上限**: 因新版 SDK 使主要 chunk 略微增大，調整 `vite.config.ts` 的 `workbox.maximumFileSizeToCacheInBytes` 至 3MB 以避免建置失敗。
+
 ## [0.2.2] - 2026-03-29
 
 ### AI 與功能優化 (AI & Enhancements)
