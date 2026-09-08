@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Easy Trip｜專案架構與功能導覽（開發者文件）</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root { --brand: #0ea5a4; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Noto Sans TC', 'Segoe UI', sans-serif; }
+  .badge { @apply inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-700 text-xs font-medium px-2.5 py-1 border border-slate-200; }
+  .badge-brand { @apply bg-teal-50 text-teal-700 border-teal-200; }
+  .card { @apply bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow; }
+  .sidebar-link { @apply block px-3 py-1.5 rounded-lg text-sm text-slate-600 hover:bg-teal-50 hover:text-teal-700 transition-colors; }
+  .sidebar-link.active { @apply bg-teal-100 text-teal-800 font-semibold; }
+  .section-title { @apply text-2xl md:text-3xl font-black text-slate-900 flex items-center gap-3; }
+  .mermaid { @apply flex justify-center bg-slate-50 rounded-xl p-4 border border-slate-200 overflow-x-auto; }
+  .feature-anchor { scroll-margin-top: 90px; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  .tree li { position: relative; }
+  .glow { text-shadow: 0 0 20px rgba(20,184,166,.35); }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<!-- ===== Top Nav ===== -->
+<header class="sticky top-0 z-50 backdrop-blur bg-white/80 border-b border-slate-200">
+  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-3 flex items-center justify-between">
+    <a href="#top" class="flex items-center gap-2 font-black text-lg text-slate-900">
+      <span class="text-2xl">🧳</span> Easy Trip <span class="text-teal-600">開發者文件</span>
+    </a>
+    <div class="hidden md:flex items-center gap-2 text-xs text-slate-500">
+      <span class="badge">Vue 3</span><span class="badge">TypeScript</span><span class="badge">Vite</span><span class="badge">Pinia</span><span class="badge badge-brand">PWA</span>
+    </div>
+  </div>
+</header>
+
+<div id="top" class="max-w-[1400px] mx-auto px-4 md:px-8 flex gap-8 py-8">
+
+  <!-- ===== Sidebar TOC ===== -->
+  <aside class="hidden lg:block w-56 shrink-0">
+    <nav class="sticky top-20 space-y-1 text-sm">
+      <p class="px-3 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">總覽</p>
+      <a class="sidebar-link" href="#overview">專案簡介</a>
+      <a class="sidebar-link" href="#architecture">系統架構圖</a>
+      <a class="sidebar-link" href="#feature-tree">功能結構樹</a>
+      <a class="sidebar-link" href="#tech-stack">技術棧</a>
+      <p class="px-3 text-xs font-bold text-slate-400 uppercase tracking-wider mt-4 mb-1">功能模組</p>
+      <a class="sidebar-link" href="#onboarding">🚀 新手導覽</a>
+      <a class="sidebar-link" href="#itinerary">🗺️ 行程規劃</a>
+      <a class="sidebar-link" href="#guides">📖 深度導覽</a>
+      <a class="sidebar-link" href="#accounting">💰 記帳分帳</a>
+      <a class="sidebar-link" href="#conversation">💬 日語對話</a>
+      <a class="sidebar-link" href="#checklist">✅ 準備清單</a>
+      <a class="sidebar-link" href="#vlog-script">🎬 Vlog 腳本</a>
+      <a class="sidebar-link" href="#ai-camera">📸 AI 相機</a>
+      <p class="px-3 text-xs font-bold text-slate-400 uppercase tracking-wider mt-4 mb-1">附錄</p>
+      <a class="sidebar-link" href="#data-model">資料模型</a>
+      <a class="sidebar-link" href="#links">相關文件連結</a>
+    </nav>
+  </aside>
+
+  <!-- ===== Main Content ===== -->
+  <main class="flex-1 min-w-0 space-y-20">
+
+    <!-- HERO -->
+    <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-400 text-white p-8 md:p-14 shadow-xl">
+      <div class="relative z-10 max-w-3xl">
+        <p class="uppercase tracking-widest text-teal-50/80 text-xs font-bold mb-3">Project Architecture &amp; Feature Guide</p>
+        <h1 class="text-3xl md:text-5xl font-black glow">Easy Trip 旅遊規劃 PWA</h1>
+        <p class="mt-4 text-teal-50/95 text-base md:text-lg leading-relaxed">
+          以 <b>Vue 3 + TypeScript + Vite</b> 打造的無後端旅遊規劃應用，全部狀態存於瀏覽器 <code class="bg-white/20 px-1.5 py-0.5 rounded">localStorage</code>。
+          整合地圖、AI 生成、記帳分帳、姿勢辨識相機等 7 大功能模組，是一份給開發人員快速上手的視覺化架構導覽。
+        </p>
+        <div class="mt-6 flex flex-wrap gap-2">
+          <span class="badge bg-white/15 text-white border-white/30">Vue 3.5</span>
+          <span class="badge bg-white/15 text-white border-white/30">Pinia + persistedstate</span>
+          <span class="badge bg-white/15 text-white border-white/30">Vue Router 4</span>
+          <span class="badge bg-white/15 text-white border-white/30">Google Gemini API</span>
+          <span class="badge bg-white/15 text-white border-white/30">Leaflet</span>
+          <span class="badge bg-white/15 text-white border-white/30">Chart.js</span>
+          <span class="badge bg-white/15 text-white border-white/30">MediaPipe Pose</span>
+          <span class="badge bg-white/15 text-white border-white/30">Tailwind CSS 4</span>
+        </div>
+      </div>
+      <div class="absolute -right-10 -bottom-16 text-[220px] opacity-20 select-none pointer-events-none">🗾</div>
+    </section>
+
+    <!-- OVERVIEW -->
+    <section id="overview" class="feature-anchor space-y-4">
+      <h2 class="section-title">📌 專案簡介</h2>
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="card p-5">
+          <p class="text-3xl mb-2">🧠</p>
+          <h3 class="font-bold text-slate-900 mb-1">無後端設計</h3>
+          <p class="text-sm text-slate-600">沒有伺服器與資料庫，所有資料透過 Pinia + <code>pinia-plugin-persistedstate</code> 寫入 <code>localStorage</code>（key：<code>easy_trip_data_v7</code>）。</p>
+        </div>
+        <div class="card p-5">
+          <p class="text-3xl mb-2">🤖</p>
+          <h3 class="font-bold text-slate-900 mb-1">AI 深度整合</h3>
+          <p class="text-sm text-slate-600">使用 Google Gemini（模型與設定統一由 <code>src/services/aiModels.ts</code> 管理，可於設定中切換），生成攻略、行程、對話與 Vlog 腳本，API Key 由使用者於設定中輸入，不使用環境變數。</p>
+        </div>
+        <div class="card p-5">
+          <p class="text-3xl mb-2">📱</p>
+          <h3 class="font-bold text-slate-900 mb-1">PWA 可安裝</h3>
+          <p class="text-sm text-slate-600">透過 <code>vite-plugin-pwa</code> 支援離線與安裝到主畫面，並支援 Web Share Target 讓使用者從其他 App 分享連結進來。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section id="architecture" class="feature-anchor space-y-4">
+      <h2 class="section-title">🏗️ 系統架構圖</h2>
+      <p class="text-slate-600 text-sm">7 個路由畫面共用兩個 Pinia Store，並透過 <code>aiService.ts</code> 統一與 Google Gemini 溝通；AI 相機模組則直接串接裝置硬體感測器。</p>
+      <div class="mermaid">
+graph TD
+  U["👤 使用者瀏覽器 / PWA"] --> R["Vue Router<br/>src/router/index.ts"]
+  R --> V1["ItineraryView /"]
+  R --> V2["GuidesView /guides"]
+  R --> V3["AccountingView /accounting"]
+  R --> V4["ConversationView /conversation"]
+  R --> V5["ChecklistView /checklist"]
+  R --> V6["VlogScriptView /vlog-script"]
+  R --> V7["AiCameraView /ai-camera"]
+
+  V1 --> ST["🗃️ useTripStore<br/>src/stores/trip.ts"]
+  V2 --> ST
+  V3 --> ST
+  V5 --> ST
+  V6 --> ST
+  V4 --> ST2["🗃️ useConversationStore<br/>src/stores/conversations.ts"]
+
+  ST -- "persistedstate" --> LS[("💾 localStorage<br/>easy_trip_data_v7")]
+
+  ST --> AI["🤖 aiService.ts"]
+  ST2 --> AI
+  V2 --> AI
+  V6 --> AI
+  AI --> GEMINI[("☁️ Google Gemini API")]
+
+  V7 --> HW["📷 getUserMedia +<br/>MediaPipe Pose +<br/>DeviceOrientationEvent"]
+
+  classDef store fill:#ccfbf1,stroke:#0d9488,color:#0f766e,font-weight:bold;
+  classDef view fill:#eff6ff,stroke:#3b82f6,color:#1e3a8a;
+  classDef ext fill:#fef9c3,stroke:#ca8a04,color:#713f12;
+  class ST,ST2 store;
+  class V1,V2,V3,V4,V5,V6,V7 view;
+  class GEMINI,LS,HW ext;
+      </div>
+    </section>
+
+    <!-- FEATURE TREE -->
+    <section id="feature-tree" class="feature-anchor space-y-4">
+      <h2 class="section-title">🌳 功能結構樹</h2>
+      <p class="text-slate-600 text-sm">以資料夾/功能層級呈現的完整清單，點擊下方對應卡片可快速跳轉至該功能的詳細技術說明。</p>
+      <div class="card p-6 overflow-x-auto">
+        <ul class="tree text-sm leading-7 whitespace-pre font-mono text-slate-700">
+<li>📦 <b>Easy Trip</b>
+  ├─ 🚀 <a href="#onboarding" class="text-teal-700 hover:underline">新手導覽</a>（歡迎 / 功能介紹 / AI 助手 / 範例資料 / PWA 安裝）
+  ├─ 🗺️ <a href="#itinerary" class="text-teal-700 hover:underline">行程規劃</a> /
+  │    ├─ 清單模式（時間軸）／地圖模式（Leaflet）
+  │    ├─ 拖曳排序 + 時間自動重算
+  │    └─ 交通串接、備案庫、預算預估
+  ├─ 📖 <a href="#guides" class="text-teal-700 hover:underline">深度導覽</a> /guides
+  │    ├─ 攻略卡片牆（想去 → 已排程 → 已去過）
+  │    └─ AI 智慧匯入（解析連結／文字）
+  ├─ 💰 <a href="#accounting" class="text-teal-700 hover:underline">記帳分帳</a> /accounting
+  │    ├─ 甜甜圈圖分析（Chart.js）
+  │    └─ 貪婪演算法自動結算
+  ├─ 💬 <a href="#conversation" class="text-teal-700 hover:underline">日語對話</a> /conversation
+  │    ├─ 情境短句庫 + AI 生成／翻譯
+  │    └─ Web Speech API 語音朗讀
+  ├─ ✅ <a href="#checklist" class="text-teal-700 hover:underline">準備清單</a> /checklist
+  │    └─ 分類待辦 + 視覺化進度條
+  ├─ 🎬 <a href="#vlog-script" class="text-teal-700 hover:underline">Vlog 拍攝腳本</a> /vlog-script
+  │    └─ AI 分鏡腳本生成 + 連結相機練習
+  └─ 📸 <a href="#ai-camera" class="text-teal-700 hover:underline">AI 智慧相機</a> /ai-camera
+       ├─ 人像模式（MediaPipe Pose 舉手拍照）
+       ├─ 風景模式（陀螺儀水平儀）
+       └─ 運鏡練習模式（幽靈框引導）
+        </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- TECH STACK -->
+    <section id="tech-stack" class="feature-anchor space-y-4">
+      <h2 class="section-title">🧩 技術棧一覽</h2>
+      <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <div class="card p-4"><p class="font-bold text-slate-900 mb-1">核心框架</p><p class="text-sm text-slate-600">Vue 3.5（Composition API）、TypeScript、Vite 7</p></div>
+        <div class="card p-4"><p class="font-bold text-slate-900 mb-1">狀態管理</p><p class="text-sm text-slate-600">Pinia 3 + pinia-plugin-persistedstate</p></div>
+        <div class="card p-4"><p class="font-bold text-slate-900 mb-1">路由</p><p class="text-sm text-slate-600">Vue Router 4，7 個頁面，4 個 lazy-loaded</p></div>
+        <div class="card p-4"><p class="font-bold text-slate-900 mb-1">樣式</p><p class="text-sm text-slate-600">Tailwind CSS 4 + Sass</p></div>
+        <div class="card p-4"><p class="font-bold text-slate-900 mb-1">地圖</p><p class="text-sm text-slate-600">Leaflet（動線繪製、Marker、自動 fitBounds）</p></div>
+        <div class="card p-4"><p class="font-bold text-slate-900 mb-1">圖表</p><p class="text-sm text-slate-600">Chart.js + vue-chartjs（甜甜圈圖）</p></div>
+        <div class="card p-4"><p class="font-bold text-slate-900 mb-1">拖曳排序</p><p class="text-sm text-slate-600">SortableJS</p></div>
+        <div class="card p-4"><p class="font-bold text-slate-900 mb-1">AI</p><p class="text-sm text-slate-600">@google/genai（Gemini，模型清單集中於 aiModels.ts，googleSearch 工具可於設定中開關）</p></div>
+        <div class="card p-4"><p class="font-bold text-slate-900 mb-1">電腦視覺</p><p class="text-sm text-slate-600">@mediapipe/tasks-vision（PoseLandmarker，GPU delegate）</p></div>
+        <div class="card p-4"><p class="font-bold text-slate-900 mb-1">PWA</p><p class="text-sm text-slate-600">vite-plugin-pwa（安裝提示、Web Share Target）</p></div>
+        <div class="card p-4"><p class="font-bold text-slate-900 mb-1">圖示</p><p class="text-sm text-slate-600">FontAwesome（vue-fontawesome）</p></div>
+        <div class="card p-4"><p class="font-bold text-slate-900 mb-1">裝置感測</p><p class="text-sm text-slate-600">getUserMedia、DeviceOrientationEvent、Web Speech API</p></div>
+      </div>
+    </section>
+
+    <hr class="border-slate-200">
+    <h2 class="text-xl font-black text-slate-400 uppercase tracking-widest text-center">↓ 功能模組詳解 ↓</h2>
+
+    <!-- ============ ONBOARDING ============ -->
+    <section id="onboarding" class="feature-anchor space-y-5">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <h2 class="section-title">🚀 新手導覽 Onboarding Tour</h2>
+        <span class="badge badge-brand">OnboardingModal.vue</span>
+      </div>
+      <div class="grid md:grid-cols-2 gap-6 items-start">
+        <div class="card p-5 space-y-3">
+          <p class="text-sm text-slate-700">使用者初次進入 App 時自動彈出的 5 頁導覽，降低學習曲線並教學 PWA 安裝方式。</p>
+          <ol class="text-sm text-slate-600 list-decimal list-inside space-y-1">
+            <li>歡迎頁：品牌形象與定位介紹</li>
+            <li>核心功能介紹：行程 / 交通 / 記帳 / 對話 四大主軸</li>
+            <li>AI 智慧助手說明：提醒需在設定輸入 API Key</li>
+            <li>範例資料提示：告知目前為 Demo 資料，可於設定清空</li>
+            <li>安裝應用程式教學：原生安裝按鈕或 iOS 手動加入主畫面</li>
+          </ol>
+          <div class="pt-2">
+            <p class="font-semibold text-slate-800 text-sm mb-1">關鍵實作</p>
+            <ul class="text-sm text-slate-600 list-disc list-inside space-y-1">
+              <li><code>currentSlide</code> 響應式變數 + <code>&lt;transition-group name="slide"&gt;</code> 做滑動特效</li>
+              <li>監聽 <code>beforeinstallprompt</code>，iOS 不支援則自動 fallback 顯示手動教學</li>
+              <li>使用 <code>useZIndex</code> composable 確保 Modal 永遠最上層</li>
+            </ul>
+          </div>
+        </div>
+        <img src="screenshots/onboarding-1.png" alt="新手導覽" class="rounded-2xl border border-slate-200 shadow-sm w-full object-cover max-h-80" />
+      </div>
+      <div class="mermaid">
+graph LR
+  A["App 掛載"] --> B{"是否已看過導覽?"}
+  B -- 否 --> C["顯示 OnboardingModal"]
+  C --> D["1.歡迎"] --> E["2.功能介紹"] --> F["3.AI助手說明"] --> G["4.範例資料"] --> H["5.PWA安裝"]
+  H --> I{"beforeinstallprompt 存在?"}
+  I -- 是 --> J["顯示原生安裝按鈕"]
+  I -- 否(iOS) --> K["顯示加入主畫面教學"]
+  B -- 是 --> L["直接進入 App"]
+      </div>
+    </section>
+
+    <!-- ============ ITINERARY ============ -->
+    <section id="itinerary" class="feature-anchor space-y-5">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <h2 class="section-title">🗺️ 行程規劃 Itinerary</h2>
+        <span class="badge badge-brand">路徑 /</span>
+      </div>
+      <div class="grid md:grid-cols-2 gap-6 items-start">
+        <img src="screenshots/itinerary.png" alt="行程規劃" class="rounded-2xl border border-slate-200 shadow-sm w-full object-cover max-h-96 order-1 md:order-2" />
+        <div class="card p-5 space-y-3 order-2 md:order-1">
+          <p class="text-sm text-slate-700">整個系統的主入口，整合地圖動線、交通建議、費用預估與行程備案的綜合控制中心。</p>
+          <ul class="text-sm text-slate-600 list-disc list-inside space-y-1">
+            <li><b>雙模動態檢視</b>：清單／地圖（Leaflet 繪製當日路徑）切換</li>
+            <li><b>拖曳調度</b>：SortableJS 拖動後自動往後推算所有行程時間</li>
+            <li><b>交通串接</b>：每筆行程間自動建立交通區塊，可手動或 AI 推薦轉乘</li>
+            <li><b>行程備案</b>：可一鍵將備案「升級」為正式行程</li>
+            <li><b>即時費用統計</b>：支援 JPY ↔ TWD 匯率換算</li>
+          </ul>
+          <div class="pt-1 flex flex-wrap gap-1.5">
+            <span class="badge">ItineraryView.vue</span>
+            <span class="badge">DateSelector.vue</span>
+            <span class="badge">EventCard.vue</span>
+            <span class="badge">TransportConnector.vue</span>
+            <span class="badge">EditEventModal.vue</span>
+          </div>
+        </div>
+      </div>
+      <p class="text-sm font-semibold text-slate-800">拖曳排序時間連鎖反應（Ripple Effect）</p>
+      <div class="mermaid">
+sequenceDiagram
+  participant U as 使用者
+  participant EC as EventCard (SortableJS)
+  participant IV as ItineraryView
+  participant Store as useTripStore
+  U->>EC: 拖曳調整行程順序
+  EC->>IV: handleDragEnd(newIndex)
+  IV->>Store: 呼叫 reorder + 重新排序 events[]
+  Store->>Store: 由目標區段起，以「前一筆結束時間」推算下一筆開始時間
+  Store->>Store: validateConflicts() 檢查時間是否重疊
+  alt 發現重疊
+    Store-->>IV: 回傳衝突 IDs
+    IV-->>U: 該行程亮紅框 + 顯示 Notification
+  else 無衝突
+    Store-->>IV: 回傳更新後 events[]
+    IV-->>U: 時間軸即時刷新
+  end
+      </div>
+    </section>
+
+    <!-- ============ GUIDES ============ -->
+    <section id="guides" class="feature-anchor space-y-5">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <h2 class="section-title">📖 深度導覽 Guides</h2>
+        <span class="badge badge-brand">路徑 /guides</span>
+      </div>
+      <div class="grid md:grid-cols-2 gap-6 items-start">
+        <img src="screenshots/guides.png" alt="深度導覽" class="rounded-2xl border border-slate-200 shadow-sm w-full object-cover max-h-96" />
+        <div class="card p-5 space-y-3">
+          <p class="text-sm text-slate-700">個人的「景點靈感收藏庫」，可從網路文章一鍵轉化成攻略卡並與行程聯動。</p>
+          <ul class="text-sm text-slate-600 list-disc list-inside space-y-1">
+            <li><b>攻略收藏牆</b>：圖片、評分、標籤瀑布式呈現</li>
+            <li><b>狀態流轉</b>：想去 → 已排程 → 已去過</li>
+            <li><b>一鍵加入行程</b>：選天數與時段即可轉為 Event</li>
+            <li><b>AI 智能匯入</b>：貼上連結／文字即自動解析成結構化攻略</li>
+            <li><b>Web Share Target</b>：手機分享連結可直接開啟 App 匯入</li>
+          </ul>
+          <div class="pt-1 flex flex-wrap gap-1.5">
+            <span class="badge">GuidesView.vue</span>
+            <span class="badge">GuideModal.vue</span>
+            <span class="badge">ImportGuideModal.vue</span>
+            <span class="badge">AddToItineraryModal.vue</span>
+          </div>
+        </div>
+      </div>
+      <p class="text-sm font-semibold text-slate-800">AI 匯入 + 分享至 App 流程</p>
+      <div class="mermaid">
+graph TD
+  A["📱 其他 App 分享連結"] -->|"Web Share Target"| B["路由攔截 title/text/url"]
+  B --> C["導向 GuidesView"]
+  C --> D["開啟 ImportGuideModal"]
+  D --> E["呼叫 Gemini API<br/>System Instruction 限定 JSON Schema"]
+  E --> F["解析出 highlights / tags / thumbnail_url 等欄位"]
+  F --> G["寫入 store.attractionGuides"]
+  G --> H["攻略卡片牆即時顯示"]
+  H -->|"一鍵加入"| I["AddToItineraryModal 選天數/時段"]
+  I --> J["轉為 Event 並加入 store.days"]
+      </div>
+    </section>
+
+    <!-- ============ ACCOUNTING ============ -->
+    <section id="accounting" class="feature-anchor space-y-5">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <h2 class="section-title">💰 記帳分帳 Accounting</h2>
+        <span class="badge badge-brand">路徑 /accounting</span>
+      </div>
+      <div class="grid md:grid-cols-2 gap-6 items-start">
+        <img src="screenshots/accounting.png" alt="記帳分帳" class="rounded-2xl border border-slate-200 shadow-sm w-full object-cover max-h-96 order-1 md:order-2" />
+        <div class="card p-5 space-y-3 order-2 md:order-1">
+          <p class="text-sm text-slate-700">團隊出遊的共用財務中心，自動計算最精簡的拆帳方案，避免人工對帳。</p>
+          <ul class="text-sm text-slate-600 list-disc list-inside space-y-1">
+            <li><b>視覺化儀表板</b>：Chart.js 甜甜圈圖呈現分類佔比</li>
+            <li><b>支出明細</b>：可設定「平均分攤」或「自訂比例」</li>
+            <li><b>智慧結算</b>：自動算出「A 應轉給 B 多少錢」，最少轉帳次數</li>
+          </ul>
+          <div class="pt-1 flex flex-wrap gap-1.5">
+            <span class="badge">AccountingView.vue</span>
+            <span class="badge">ExpenseModal.vue</span>
+            <span class="badge">chart.js / vue-chartjs</span>
+          </div>
+        </div>
+      </div>
+      <p class="text-sm font-semibold text-slate-800">結算演算法（Greedy Transfer Resolution）</p>
+      <div class="mermaid">
+graph LR
+  A["expenses[]"] --> B["Step1: 計算每人 balance<br/>付款者 +amount／參與者 -分攤額"]
+  B --> C{"balance 正負?"}
+  C -->|"> 0"| D["債權人 creditors"]
+  C -->|"< 0"| E["債務人 debtors"]
+  D --> F["Step2: 雙指標排序"]
+  E --> F
+  F --> G["Step3: 貪婪演算法同步消減金額"]
+  G --> H["transfers[]：from → to：amount"]
+      </div>
+    </section>
+
+    <!-- ============ CONVERSATION ============ -->
+    <section id="conversation" class="feature-anchor space-y-5">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <h2 class="section-title">💬 實用日語對話 Conversation</h2>
+        <span class="badge badge-brand">路徑 /conversation</span>
+      </div>
+      <div class="grid md:grid-cols-2 gap-6 items-start">
+        <img src="screenshots/conversation.png" alt="日語對話" class="rounded-2xl border border-slate-200 shadow-sm w-full object-cover max-h-96" />
+        <div class="card p-5 space-y-3">
+          <p class="text-sm text-slate-700">解決旅日語言障礙：內建情境短句 + AI 客製化翻譯／生成 + TTS 語音朗讀。</p>
+          <ul class="text-sm text-slate-600 list-disc list-inside space-y-1">
+            <li><b>情境標籤</b>：交通、住宿、購物、海關、自訂</li>
+            <li><b>AI 雙模式</b>：純翻譯 or AI 情境推薦潤飾</li>
+            <li><b>TTS 朗讀</b>：<code>speechSynthesis</code> 強制 <code>lang=ja-JP</code>，並搜尋日語音色、放慢語速 0.9</li>
+          </ul>
+          <div class="pt-1 flex flex-wrap gap-1.5">
+            <span class="badge">ConversationView.vue</span>
+            <span class="badge">ConversationCard.vue</span>
+            <span class="badge">useConversationStore</span>
+            <span class="badge">gemini-2.5-flash-lite</span>
+          </div>
+        </div>
+      </div>
+      <div class="mermaid">
+graph TD
+  A["使用者輸入中文"] --> B{"選擇模式"}
+  B -->|"純翻譯"| C["Gemini 嚴格翻譯 Prompt"]
+  B -->|"AI 情境推薦"| D["Gemini 情境潤飾 Prompt"]
+  C --> E["回傳日文短句"]
+  D --> E
+  E -->|"API Key 未設定"| F["Fallback 開啟 Google 翻譯連結"]
+  E --> G["寫入 custom 分類 phrases"]
+  G --> H["點擊播放 → SpeechSynthesisUtterance(lang=ja-JP, rate=0.9)"]
+      </div>
+    </section>
+
+    <!-- ============ CHECKLIST ============ -->
+    <section id="checklist" class="feature-anchor space-y-5">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <h2 class="section-title">✅ 準備清單 Checklist</h2>
+        <span class="badge badge-brand">路徑 /checklist</span>
+      </div>
+      <div class="grid md:grid-cols-2 gap-6 items-start">
+        <img src="screenshots/checklist.png" alt="準備清單" class="rounded-2xl border border-slate-200 shadow-sm w-full object-cover max-h-96 order-1 md:order-2" />
+        <div class="card p-5 space-y-3 order-2 md:order-1">
+          <p class="text-sm text-slate-700">行李與行前準備核對工具，具備分類管理與進度視覺化。</p>
+          <ul class="text-sm text-slate-600 list-disc list-inside space-y-1">
+            <li><b>多分類頁籤</b>：出發前待辦 / 隨身物品 / 行李箱衣物，可自訂新增刪除</li>
+            <li><b>進度回饋</b>：勾選項目淡化 + 刪除線，進度條動畫漲滿</li>
+            <li><b>快速輸入</b>：Sticky 輸入列，Enter 鍵連續新增</li>
+          </ul>
+          <div class="pt-1 flex flex-wrap gap-1.5">
+            <span class="badge">ChecklistView.vue</span>
+            <span class="badge">InputModal.vue</span>
+            <span class="badge">ConfirmModal.vue</span>
+          </div>
+          <p class="text-xs text-slate-500">實作重點：<code>&lt;transition-group name="list"&gt;</code> 做淡化位移效果；<code>watch</code> 深層監聽避免刪除中的分類造成白畫面。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ VLOG SCRIPT ============ -->
+    <section id="vlog-script" class="feature-anchor space-y-5">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <h2 class="section-title">🎬 Vlog 拍攝腳本</h2>
+        <span class="badge badge-brand">路徑 /vlog-script</span>
+      </div>
+      <div class="grid md:grid-cols-2 gap-6 items-start">
+        <img src="screenshots/vlog-script.png" alt="Vlog 拍攝腳本" class="rounded-2xl border border-slate-200 shadow-sm w-full object-cover max-h-96" />
+        <div class="card p-5 space-y-3">
+          <p class="text-sm text-slate-700">依據使用者行程，由 AI 打造專業分鏡腳本，並連結相機練習運鏡。</p>
+          <ul class="text-sm text-slate-600 list-disc list-inside space-y-1">
+            <li><b>天數篩選</b>：單日或全部行程</li>
+            <li><b>AI 分鏡</b>：場景、主體動作、運鏡手法（Pan / Tilt / Static / Tracking）、秒數</li>
+            <li><b>連結實機訓練</b>：點擊「練習此運鏡」跳轉 AiCameraView 對應模式</li>
+          </ul>
+          <div class="pt-1 flex flex-wrap gap-1.5">
+            <span class="badge">VlogScriptView.vue</span>
+            <span class="badge">cameraToMoveMap</span>
+          </div>
+        </div>
+      </div>
+      <div class="mermaid">
+graph TD
+  A["store.days.events"] --> B["降維簡化 simplifiedItinerary<br/>(時間/標題/地點/分類)"]
+  B --> C["Gemini：Professional Travel Vlog Director Prompt"]
+  C --> D["輸出 JSON 陣列（禁止 Markdown）"]
+  D --> E["Regex /\\[[\\s\\S]*\\]/ 強制擷取合法 JSON"]
+  E --> F["渲染分鏡卡片"]
+  F --> G{"運鏡手法受支援?<br/>cameraToMoveMap"}
+  G -- 是 --> H["顯示「練習此運鏡」按鈕"]
+  H --> I["router push /ai-camera?mode=vlog&move=pan-right"]
+  G -- 否 --> F
+      </div>
+    </section>
+
+    <!-- ============ AI CAMERA ============ -->
+    <section id="ai-camera" class="feature-anchor space-y-5">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <h2 class="section-title">📸 AI 智慧相機</h2>
+        <span class="badge badge-brand">路徑 /ai-camera</span>
+      </div>
+      <div class="grid md:grid-cols-2 gap-6 items-start">
+        <img src="screenshots/ai-camera.png" alt="AI 相機" class="rounded-2xl border border-slate-200 shadow-sm w-full object-cover max-h-96 order-1 md:order-2" />
+        <div class="card p-5 space-y-3 order-2 md:order-1">
+          <p class="text-sm text-slate-700">利用裝置硬體與 Web AI 模型解決「沒人拍照」「風景歪斜」「運鏡手震」三大痛點。</p>
+          <ul class="text-sm text-slate-600 list-disc list-inside space-y-1">
+            <li><b>人像模式</b>：MediaPipe Pose 偵測雙手舉高頭部 → 3 秒倒數自動拍照</li>
+            <li><b>風景模式</b>：<code>DeviceOrientationEvent</code> Gamma 角度 &lt; 1° 判定水平完美</li>
+            <li><b>運鏡練習模式</b>：幽靈框引導 + 速度過快紅色警告</li>
+          </ul>
+          <div class="pt-1 flex flex-wrap gap-1.5">
+            <span class="badge">AiCameraView.vue</span>
+            <span class="badge">@mediapipe/tasks-vision</span>
+            <span class="badge">getUserMedia</span>
+          </div>
+        </div>
+      </div>
+      <p class="text-sm font-semibold text-slate-800">三大模式決策流程</p>
+      <div class="mermaid">
+graph TD
+  A["開啟相機 getUserMedia"] --> B{"選擇模式"}
+  B -->|"人像 Portrait"| C["PoseLandmarker 每幀推論<br/>取得 nose/leftWrist/rightWrist"]
+  C --> D{"leftWrist.y < nose.y<br/>&& rightWrist.y < nose.y ?"}
+  D -- 是 --> E["3 秒倒數 → canvas 截圖 PNG"]
+  D -- 否 --> C
+  B -->|"風景 Landscape"| F["監聽 Gamma 角度"]
+  F --> G{"Gamma < 1° ?"}
+  G -- 是 --> H["水平儀變綠加粗"]
+  G -- 否 --> F
+  B -->|"運鏡練習 Vlog"| I["顯示幽靈框 Ghost Box"]
+  I --> J["比對 Alpha/Beta 累積轉動量"]
+  J --> K{"轉動速度是否過快?"}
+  K -- 是 --> L["顯示紅色警告：太快了"]
+  K -- 否 --> M["進度條推進 #vlogProgress"]
+      </div>
+      <div class="card p-4 text-xs text-slate-500 bg-amber-50 border-amber-200">
+        ⚠️ <b>資源釋放注意</b>：切換模式與 <code>onUnmounted</code> 必須執行 <code>cancelAnimationFrame</code>、<code>track.stop()</code>，避免記憶體洩漏與鏡頭常亮發熱。
+      </div>
+    </section>
+
+    <!-- ============ DATA MODEL ============ -->
+    <section id="data-model" class="feature-anchor space-y-4">
+      <h2 class="section-title">🗂️ 核心資料模型</h2>
+      <p class="text-slate-600 text-sm">定義於 <code>src/stores/types.ts</code>，外部元件一律從 <code>stores/trip.ts</code> re-export 引入型別。</p>
+      <div class="overflow-x-auto card">
+        <table class="w-full text-sm text-left">
+          <thead class="bg-slate-100 text-slate-600">
+            <tr><th class="p-3">型別</th><th class="p-3">說明</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="p-3 font-mono text-teal-700">Event</td><td class="p-3">行程事件，<code>category: 'fun'|'food'|'shop'|'stay'|'transport'|'flight'</code></td></tr>
+            <tr><td class="p-3 font-mono text-teal-700">Day</td><td class="p-3">一天，含 <code>dateStr</code>（格式 M/D (Mon)）與 <code>events[]</code></td></tr>
+            <tr><td class="p-3 font-mono text-teal-700">Guide</td><td class="p-3">景點攻略，<code>status: 'want_to_go'|'planned'|'visited'</code></td></tr>
+            <tr><td class="p-3 font-mono text-teal-700">Transport</td><td class="p-3">交通段，<code>type: 'walk'|'public'|'express'|'ferry'|'taxi'|'drive'|'flight'</code></td></tr>
+            <tr><td class="p-3 font-mono text-teal-700">Expense</td><td class="p-3">費用，支援 6 種 <code>splitMethod</code></td></tr>
+            <tr><td class="p-3 font-mono text-teal-700">Settings</td><td class="p-3">含 <code>aiSettings</code>（apiKey, model, customPrompt）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="mermaid">
+graph LR
+  Day["Day<br/>dateStr, events[]"] --> Event["Event<br/>category, time, lat/lng"]
+  Event --> Transport["Transport<br/>type, duration"]
+  Guide["Guide<br/>status"] -->|"加入行程"| Event
+  Expense["Expense<br/>payer, involved[], splitMethod"] -.-> Day
+  Settings["Settings<br/>aiSettings.apiKey"] -.-> AIService["aiService.ts"]
+      </div>
+    </section>
+
+    <!-- LINKS -->
+    <section id="links" class="feature-anchor space-y-4 pb-10">
+      <h2 class="section-title">🔗 相關文件連結</h2>
+      <div class="grid sm:grid-cols-2 gap-3 text-sm">
+        <a href="../README.md" class="card p-4 flex items-center gap-3 hover:border-teal-300"><span>📘</span><span>README — 技術棧與安裝指南</span></a>
+        <a href="整體功能導覽地圖.md" class="card p-4 flex items-center gap-3 hover:border-teal-300"><span>🗺️</span><span>整體功能導覽地圖.md（原始 Markdown）</span></a>
+        <a href="../CHANGELOG.md" class="card p-4 flex items-center gap-3 hover:border-teal-300"><span>📝</span><span>CHANGELOG — 版本更新記錄</span></a>
+        <a href="features/" class="card p-4 flex items-center gap-3 hover:border-teal-300"><span>📂</span><span>features/ — 各功能原始說明文件 00~07</span></a>
+      </div>
+      <p class="text-xs text-slate-400 text-center pt-6">此頁由 docs/ 底下之 Markdown 說明文件彙整生成，供開發人員快速理解專案架構。</p>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose', flowchart: { curve: 'basis' } });
+
+  // active sidebar link highlighting
+  const links = document.querySelectorAll('.sidebar-link');
+  const sections = Array.from(links).map(l => document.querySelector(l.getAttribute('href')));
+  const setActive = () => {
+    let idx = 0;
+    sections.forEach((sec, i) => { if (sec && sec.getBoundingClientRect().top < 120) idx = i; });
+    links.forEach((l, i) => l.classList.toggle('active', i === idx));
+  };
+  document.addEventListener('scroll', setActive);
+  setActive();
+</script>
+</body>
+</html>

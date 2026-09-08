@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { validateDaySchedule } from '../utils/TimeAdjustmentUtil'
 import { useTripListStore, getTripStorageKey, LEGACY_TRIP_ID } from './tripList'
+import { DEFAULT_AI_MODEL } from '../services/aiModels'
 import type {
     Guide,
     TransportPass,
@@ -54,7 +55,7 @@ export const useTripStore = defineStore('trip', {
             voiceURI: '',
             aiSettings: {
                 apiKey: '',
-                model: 'gemini-2.5-flash',
+                model: DEFAULT_AI_MODEL,
                 customPrompt: ''
             }
         },
@@ -170,7 +171,7 @@ export const useTripStore = defineStore('trip', {
                     // Ensure timeFormat exists if loading old settings
                     if (!this.settings.timeFormat) this.settings.timeFormat = '24h'
                     if (this.settings.voiceURI === undefined) this.settings.voiceURI = ''
-                    if (!this.settings.aiSettings) this.settings.aiSettings = { apiKey: '', model: 'gemini-2.5-flash' }
+                    if (!this.settings.aiSettings) this.settings.aiSettings = { apiKey: '', model: DEFAULT_AI_MODEL }
 
                     this.title = parsed.title || DEFAULT_DATA.title
                     this.startDate = parsed.startDate || DEFAULT_DATA.startDate
@@ -345,7 +346,7 @@ export const useTripStore = defineStore('trip', {
         /** 建立一筆全新的空白行程資料（不同於 loadExampleData 的範例資料），供「新增行程」流程使用 */
         initBlankTrip(id: string, title: string) {
             const currentApiKey = this.settings.aiSettings?.apiKey || ''
-            const currentModel = this.settings.aiSettings?.model || 'gemini-2.5-flash'
+            const currentModel = this.settings.aiSettings?.model || DEFAULT_AI_MODEL
 
             this.id = id
             this.ownerId = 'local'
@@ -385,9 +386,9 @@ export const useTripStore = defineStore('trip', {
             this.travelers = JSON.parse(JSON.stringify(sourceData.travelers || ['我']))
             this.passes = JSON.parse(JSON.stringify(sourceData.passes || []))
             this.attractionGuides = JSON.parse(JSON.stringify(sourceData.attractionGuides || DEFAULT_GUIDES))
-            this.settings = { ...sourceData.settings } as any || { currency: 'JPY', timeFormat: '24h', voiceURI: '', aiSettings: { apiKey: '', model: 'gemini-2.5-flash' } }
+            this.settings = { ...sourceData.settings } as any || { currency: 'JPY', timeFormat: '24h', voiceURI: '', aiSettings: { apiKey: '', model: DEFAULT_AI_MODEL } }
             if (!this.settings.currency || this.settings.currency === '') this.settings.currency = 'JPY'
-            if (!this.settings.aiSettings) this.settings.aiSettings = { apiKey: '', model: 'gemini-2.5-flash' }
+            if (!this.settings.aiSettings) this.settings.aiSettings = { apiKey: '', model: DEFAULT_AI_MODEL }
 
             this.title = sourceData.title || 'Easy Trip'
             this.startDate = sourceData.startDate || '2025-09-10'
@@ -450,7 +451,7 @@ export const useTripStore = defineStore('trip', {
                 voiceURI: '',
                 aiSettings: {
                     apiKey: currentApiKey, // Restore API Key
-                    model: 'gemini-2.5-flash'
+                    model: DEFAULT_AI_MODEL
                 }
             }
             this.title = '我的行程'

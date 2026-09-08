@@ -184,10 +184,7 @@
                 @change="(e) => updateAiSetting('model', (e.target as HTMLSelectElement).value)"
                 class="w-full p-2 rounded-lg bg-gray-50 border border-gray-200 text-sm outline-none focus:border-jp-mustard"
               >
-                <option value="gemini-3-pro-preview">Gemini 3 Pro Preview (最新最強)</option>
-                <option value="gemini-2.5-pro">Gemini 2.5 Pro (進階思考)</option>
-                <option value="gemini-2.5-flash">Gemini 2.5 Flash (推薦)</option>
-                <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite (最快速)</option>
+                <option v-for="option in AI_MODEL_OPTIONS" :key="option.value" :value="option.value">{{ option.label }}</option>
               </select>
 
               <label class="block text-xs font-bold text-gray-500 mt-4">自訂 AI 提示詞 (Custom Prompt)</label>
@@ -198,6 +195,27 @@
                 rows="3"
                 placeholder="例如：請優先建議地鐵路線，避免公車。導覽內容請多介紹歷史背景。"
               ></textarea>
+
+              <!-- Google 即時搜尋開關 -->
+              <div class="flex items-center justify-between mt-4 bg-gray-50 rounded-lg border border-gray-200 p-3">
+                <div class="pr-3">
+                  <p class="text-xs font-bold text-gray-600">Google 即時搜尋 (Grounding)</p>
+                  <p class="text-[10px] text-gray-400 mt-0.5">讓 AI 參考即時網路資訊回答。免費版 API Key 對此功能的配額非常有限，若常遇到配額錯誤可考慮關閉。</p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  :aria-checked="enableGoogleSearch"
+                  @click="updateAiSetting('enableGoogleSearch', !enableGoogleSearch)"
+                  class="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors"
+                  :class="enableGoogleSearch ? 'bg-jp-mustard' : 'bg-gray-300'"
+                >
+                  <span
+                    class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                    :class="enableGoogleSearch ? 'translate-x-6' : 'translate-x-1'"
+                  />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -416,6 +434,7 @@ import { ref, watch, toRef, computed } from 'vue'
 import { useTripStore, getTripStorageKey } from '../stores/trip.ts'
 import ConfirmModal from './ConfirmModal.vue'
 import { useDynamicZIndex } from '../composables/useZIndex'
+import { AI_MODEL_OPTIONS, DEFAULT_AI_MODEL } from '../services/aiModels'
 import pkg from '../../package.json'
 
 const appName = pkg.name
@@ -643,8 +662,8 @@ const updateVoice = (e: Event) => {
   store.updateSettings({ voiceURI: target.value })
 }
 
-const updateAiSetting = (key: 'apiKey' | 'model' | 'customPrompt', value: string) => {
-  const currentAiSettings = store.settings.aiSettings || { apiKey: '', model: 'gemini-2.5-flash' }
+const updateAiSetting = (key: 'apiKey' | 'model' | 'customPrompt' | 'enableGoogleSearch', value: string | boolean) => {
+  const currentAiSettings = store.settings.aiSettings || { apiKey: '', model: DEFAULT_AI_MODEL }
   store.updateSettings({
     aiSettings: {
       ...currentAiSettings,
@@ -652,6 +671,9 @@ const updateAiSetting = (key: 'apiKey' | 'model' | 'customPrompt', value: string
     }
   })
 }
+
+// undefined 視為預設開啟，維持既有行為
+const enableGoogleSearch = computed(() => store.settings.aiSettings?.enableGoogleSearch !== false)
 
 const previewVoice = () => {
   const utterance = new SpeechSynthesisUtterance('こんにちは、これはテストです。') // "Hello, this is a test."

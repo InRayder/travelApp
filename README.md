@@ -35,7 +35,7 @@
 - **UI & 樣式**：[Tailwind CSS 4](https://tailwindcss.com/) & Sass
 - **地圖整合**：[Leaflet](https://leafletjs.com/)
 - **圖表分析**：[Chart.js](https://www.chartjs.org/) / [vue-chartjs](https://vue-chartjs.org/)
-- **AI 與機器視覺**：`@google/generative-ai`、`@mediapipe/tasks-vision`
+- **AI 與機器視覺**：`@google/genai`、`@mediapipe/tasks-vision`
 - **圖標庫**：[FontAwesome 7](https://fontawesome.com/)
 - **拖曳互動**：[SortableJS](https://github.com/SortableJS/Sortable)
 - **Markdown 解析**：[markdown-it](https://github.com/markdown-it/markdown-it)
@@ -47,8 +47,8 @@
 npm install
 ```
 
-### 2. 環境變數設定 (Environment Variables)
-請複製或建立 `.env` 檔案，並填寫必要的 API Keys（如 Google Gemini API 金鑰等）。
+### 2. AI 功能設定 (AI Configuration)
+本專案無後端、不使用 `.env` 環境變數。若要使用 AI 功能（攻略生成、行程建議、對話翻譯、Vlog 腳本），請於啟動後在 App 內「設定」→「AI」分頁輸入 Google Gemini API Key（可於 [Google AI Studio](https://aistudio.google.com/app/apikey) 免費取得），Key 僅儲存在瀏覽器 localStorage。
 
 ### 3. 啟動開發伺服器 (Start Development Server)
 ```bash

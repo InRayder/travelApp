@@ -298,7 +298,7 @@ const analyze = async () => {
     const model = store.settings.aiSettings?.model
     
     // Call AI Service
-    const result = await generateGuideFromContent(apiKey, model || '', form.text, form.url)
+    const result = await generateGuideFromContent(apiKey, model || '', form.text, form.url, store.settings.aiSettings?.enableGoogleSearch)
     
     analyzedData.value = result as Guide & { title: string }
     

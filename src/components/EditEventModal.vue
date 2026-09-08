@@ -468,7 +468,8 @@ import { ref, watch, toRaw, nextTick, computed, toRef } from 'vue'
 import { useTripStore } from '../stores/trip.ts'
 import type { Event as TripEvent, Transport } from '../stores/trip.ts'
 import { diffMinutes, addMinutes } from '../utils/time.ts'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenAI } from '@google/genai'
+import { resolveAiModel, getAiErrorMessage, buildAiTools } from '../services/aiModels'
 import LoadingAnimation from './LoadingAnimation.vue'
 import GuideModal from './GuideModal.vue'
 import { useDynamicZIndex } from '../composables/useZIndex'
@@ -600,11 +601,7 @@ const generateGuide = async () => {
 
   isGuideGenerating.value = true
   try {
-    const genAI = new GoogleGenerativeAI(store.settings.aiSettings.apiKey)
-    const model = genAI.getGenerativeModel({ 
-        model: store.settings.aiSettings.model || 'gemini-2.5-flash',
-        tools: [{ googleSearch: {} } as any]
-    })
+    const genAI = new GoogleGenAI({ apiKey: store.settings.aiSettings.apiKey })
 
     const customPrompt = store.settings.aiSettings.customPrompt ? `\nUser preferences: ${store.settings.aiSettings.customPrompt}` : ''
 
@@ -623,8 +620,12 @@ const generateGuide = async () => {
       }
     `
 
-    const result = await model.generateContent(prompt)
-    const response = result.response.text()
+    const result = await genAI.models.generateContent({
+      model: resolveAiModel(store.settings.aiSettings.model),
+      contents: prompt,
+      config: { tools: buildAiTools(store.settings.aiSettings.enableGoogleSearch) }
+    })
+    const response = result.text || ''
     const jsonMatch = response.match(/\{[\s\S]*\}/)
     
     if (jsonMatch) {
@@ -654,7 +655,7 @@ const generateGuide = async () => {
     }
   } catch (e) {
     console.error('AI Guide Generation Error:', e)
-    alert('AI 生成失敗，請稍後再試。')
+    alert(getAiErrorMessage(e))
   } finally {
     isGuideGenerating.value = false
   }
@@ -747,11 +748,7 @@ const suggestTransport = async (transportIndex: number) => {
   aiReasoning.value = null
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ 
-        model: store.settings.aiSettings?.model || 'gemini-2.5-flash',
-        tools: [{ googleSearch: {} } as any]
-    })
+    const genAI = new GoogleGenAI({ apiKey })
 
     const customPrompt = store.settings.aiSettings?.customPrompt ? `\nUser preferences: ${store.settings.aiSettings.customPrompt}` : ''
 
@@ -779,8 +776,12 @@ const suggestTransport = async (transportIndex: number) => {
       }
     `
 
-    const result = await model.generateContent(prompt)
-    const response = result.response.text()
+    const result = await genAI.models.generateContent({
+      model: resolveAiModel(store.settings.aiSettings?.model),
+      contents: prompt,
+      config: { tools: buildAiTools(store.settings.aiSettings?.enableGoogleSearch) }
+    })
+    const response = result.text || ''
     console.log('AI Transport Response:', response) // Debug log
     const jsonMatch = response.match(/\{[\s\S]*\}/)
     
@@ -849,7 +850,7 @@ const suggestTransport = async (transportIndex: number) => {
     }
   } catch (e) {
     console.error('AI Suggestion Error:', e)
-    alert('AI 建議失敗，請稍後再試。')
+    alert(getAiErrorMessage(e))
   } finally {
     isAiLoading.value = false
   }
