@@ -118,6 +118,20 @@
           </button>
         </RouterLink>
 
+        <!-- 旅遊小冊 -->
+        <RouterLink to="/booklet" custom v-slot="{ navigate, isActive }">
+          <button 
+            @click="navigateAndClose(navigate)" 
+            class="flex flex-col items-center gap-2 p-3 rounded-2xl transition-all"
+            :class="isActive ? 'bg-teal-50 text-teal-500' : 'text-gray-600 hover:bg-gray-50'"
+          >
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center" :class="isActive ? 'bg-teal-100' : 'bg-gray-100'">
+              <font-awesome-icon icon="fa-solid fa-book-bookmark" class="text-xl" />
+            </div>
+            <span class="text-xs font-medium">旅遊小冊</span>
+          </button>
+        </RouterLink>
+
         <!-- 設定 -->
         <button 
           @click="openSettings" 
@@ -160,7 +174,7 @@ const isHidden = computed(() => {
 
 // 判斷是否有「更多」選單內的頁面處於活動狀態
 const isMoreActive = computed(() => {
-  return ['/checklist', '/conversation', '/vlog-script', '/ai-camera'].includes(route.path)
+  return ['/checklist', '/conversation', '/vlog-script', '/ai-camera', '/booklet'].includes(route.path)
 })
 
 const toggleMoreMenu = () => {

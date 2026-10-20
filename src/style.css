@@ -179,3 +179,164 @@ header button {
     z-index: 100;
     touch-action: manipulation;
 }
+
+/* 列印樣式 (旅遊小冊) ---------------------------------------------------- */
+/* 一般畫面不受影響；只有在觸發瀏覽器列印/另存 PDF 時才會套用。 */
+@media print {
+
+    /* 隱藏所有非小冊內容的常駐 UI（Header、底部導覽、FAB、通知等） */
+    .no-print {
+        display: none !important;
+    }
+
+    /* 解除外層 flex/overflow 容器對列印內容的裁切限制，讓小冊能完整分頁輸出 */
+    html,
+    body,
+    #app {
+        height: auto !important;
+        overflow: visible !important;
+        background: #fff !important;
+    }
+
+    .app-root,
+    .view-port {
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    .print-area {
+        position: static !important;
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+    }
+
+    /* 強制列印底色與插圖裝飾（washi tape、便利貼、票券卡片陰影等），
+       避免使用者未勾選瀏覽器「背景圖形」選項時版型裝飾消失不見 */
+    .print-area,
+    .print-area * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+
+    /* 每個章節獨立分頁，避免內容被硬生生切半 */
+    .print-section {
+        break-before: page;
+        break-inside: avoid;
+    }
+
+    .print-section:first-child {
+        break-before: auto;
+    }
+
+    .print-day {
+        break-inside: avoid;
+    }
+}
+
+/* 旅遊小冊：主題色票與裝飾樣式 (BookletView.vue / BookletGuideCard.vue) ---- */
+/* 這些樣式需同時套用於畫面預覽與列印輸出，因此放在全域樣式而非元件 scoped style，
+   讓 BookletGuideCard.vue 子元件也能共用。色票透過 CSS 變數 --booklet-accent /
+   --booklet-accent-rgb / --booklet-accent-soft 驅動，由 BookletView.vue 動態設定。 */
+.booklet-accent-text {
+    color: var(--booklet-accent, #E6B422);
+}
+
+.booklet-accent-bg {
+    background-color: var(--booklet-accent, #E6B422);
+}
+
+.booklet-accent-border {
+    border-color: var(--booklet-accent, #E6B422);
+}
+
+.booklet-accent-bg-soft {
+    background-color: var(--booklet-accent-soft, #FDF3D9);
+}
+
+.booklet-accent-border-60 {
+    border-color: rgba(var(--booklet-accent-rgb, 230, 180, 34), 0.6);
+}
+
+.booklet-accent-border-70 {
+    border-color: rgba(var(--booklet-accent-rgb, 230, 180, 34), 0.7);
+}
+
+.booklet-accent-watermark {
+    color: rgba(var(--booklet-accent-rgb, 230, 180, 34), 0.06);
+}
+
+/* 小冊底色：簡約／雜誌版型維持純白；手帳旅誌版型套用和風紙紋底色 */
+.print-area.theme-minimal,
+.print-area.theme-magazine {
+    background-color: #fff;
+}
+
+.print-area.theme-journal {
+    background-color: #FDFCF6;
+    background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23E6B422' fill-opacity='0.06' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* 手帳風封面的 washi tape（紙膠帶）裝飾，顏色隨主題色票變化 */
+.booklet-washi-tape {
+    position: absolute;
+    top: -8px;
+    width: 92px;
+    height: 30px;
+    background: repeating-linear-gradient(135deg, rgba(var(--booklet-accent-rgb, 230, 180, 34), 0.55) 0 8px, rgba(var(--booklet-accent-rgb, 230, 180, 34), 0.3) 8px 16px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+}
+
+.booklet-washi-tape-left {
+    left: 28px;
+    transform: rotate(-8deg);
+}
+
+.booklet-washi-tape-right {
+    right: 28px;
+    transform: rotate(8deg);
+    background: repeating-linear-gradient(135deg, rgba(var(--booklet-accent-rgb, 230, 180, 34), 0.38) 0 8px, rgba(var(--booklet-accent-rgb, 230, 180, 34), 0.18) 8px 16px);
+}
+
+/* 手帳風景點卡片：明信片右上角摺角效果（顏色跟隨色票的淺色調） */
+.booklet-postcard {
+    position: relative;
+}
+
+.booklet-postcard::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 18px 18px 0;
+    border-color: transparent var(--booklet-accent-soft, #F3E7CA) transparent transparent;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+}
+
+/* 手帳風小提示：便利貼風格 */
+.booklet-sticky-note {
+    transform: rotate(-1deg);
+}
+
+/* 手帳風交通票券：拍立得相片風格，交錯微旋轉 */
+.booklet-polaroid {
+    background: #fff;
+    padding: 10px 10px 30px;
+    border: 1px solid #eee;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.booklet-polaroid:nth-child(odd) {
+    transform: rotate(-2deg);
+}
+
+.booklet-polaroid:nth-child(even) {
+    transform: rotate(2deg);
+}

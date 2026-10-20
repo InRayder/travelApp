@@ -1,33 +1,37 @@
 <template>
-  <div class="h-[100dvh] flex flex-col relative overflow-hidden text-jp-dark font-sans bg-pattern-seigaiha">
-    <AppHeader />
-    <div class="flex-1 overflow-hidden relative"> <!-- 內距由視圖處理 (Padding handled by views) -->
+  <div class="app-root h-[100dvh] flex flex-col relative overflow-hidden text-jp-dark font-sans bg-pattern-seigaiha">
+    <div class="no-print"><AppHeader /></div>
+    <div class="view-port flex-1 overflow-hidden relative"> <!-- 內距由視圖處理 (Padding handled by views) -->
       <RouterView />
     </div>
     
-    <GlobalNotification />
+    <div class="no-print"><GlobalNotification /></div>
     
-    <BottomNav />
-    <SettingsModal :isOpen="store.isSettingsOpen" @close="store.setSettingsOpen(false)" />
-    <AiAssistantModal 
-    v-if="store.settings.aiSettings?.apiKey"
-    :isOpen="store.isAiAssistantOpen"
-    @close="store.isAiAssistantOpen = false"
-    @open-settings="store.setSettingsOpen(true)"
-  />
+    <div class="no-print"><BottomNav /></div>
+    <div class="no-print">
+      <SettingsModal :isOpen="store.isSettingsOpen" @close="store.setSettingsOpen(false)" />
+      <AiAssistantModal 
+      v-if="store.settings.aiSettings?.apiKey"
+      :isOpen="store.isAiAssistantOpen"
+      @close="store.isAiAssistantOpen = false"
+      @open-settings="store.setSettingsOpen(true)"
+    />
+    </div>
     
     <!-- AI Assistant FAB -->
     <button
       v-if="store.settings.aiSettings?.apiKey"
       @click="store.isAiAssistantOpen = true"
-      class="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
+      class="no-print fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
       aria-label="AI 助手"
     >
       <font-awesome-icon icon="wand-magic-sparkles" class="text-xl" />
     </button>
 
-    <InstallPrompt v-if="!store.isOnboardingOpen" />
-    <OnboardingModal :isOpen="store.isOnboardingOpen" @close="store.completeOnboarding()" />
+    <div class="no-print">
+      <InstallPrompt v-if="!store.isOnboardingOpen" />
+      <OnboardingModal :isOpen="store.isOnboardingOpen" @close="store.completeOnboarding()" />
+    </div>
   </div>
   <SpeedInsights />
 </template>

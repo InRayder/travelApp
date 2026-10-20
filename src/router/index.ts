@@ -40,6 +40,11 @@ const router = createRouter({
             path: '/ai-camera',
             name: 'ai-camera',
             component: () => import('../views/AiCameraView.vue')
+        },
+        {
+            path: '/booklet',
+            name: 'booklet',
+            component: () => import('../views/BookletView.vue')
         }
     ]
 })

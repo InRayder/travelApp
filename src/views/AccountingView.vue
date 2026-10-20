@@ -86,6 +86,7 @@ import { Doughnut } from 'vue-chartjs'
 import ExpenseModal from '../components/ExpenseModal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
 import { useConfirmModal } from '../composables/useConfirmModal'
+import { calculateSettlement } from '../utils/settlementUtil'
 import type { Expense } from '../stores/trip.ts'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
@@ -138,57 +139,7 @@ const chartOptions = {
 }
 
 // --- Settlement Logic ---
-const settlement = computed(() => {
-  const balances: Record<string, number> = {}
-  travelers.value.forEach(p => balances[p] = 0)
-
-  expenses.value.forEach(e => {
-    // Payer paid (+)
-    balances[e.payer] += e.amount
-    
-    // Split logic
-    if (e.splitMethod === 'average') {
-      const involved = e.involved || []
-      if (involved.length > 0) {
-        const perPerson = e.amount / involved.length
-        involved.forEach(p => balances[p] -= perPerson)
-      }
-    } else {
-      for (const [person, amount] of Object.entries(e.customShares || {})) {
-        balances[person] -= amount
-      }
-    }
-  })
-
-  // Calculate transfers
-  const debtors: { person: string, amount: number }[] = []
-  const creditors: { person: string, amount: number }[] = []
-  for (const [person, amount] of Object.entries(balances)) {
-    if (amount < -1) debtors.push({ person, amount })
-    else if (amount > 1) creditors.push({ person, amount })
-  }
-
-  debtors.sort((a, b) => a.amount - b.amount)
-  creditors.sort((a, b) => b.amount - a.amount)
-
-  const transfers: { from: string, to: string, amount: number }[] = []
-  let i = 0, j = 0
-  while (i < debtors.length && j < creditors.length) {
-    const debtor = debtors[i]
-    const creditor = creditors[j]
-    const amount = Math.min(Math.abs(debtor.amount), creditor.amount)
-    
-    transfers.push({ from: debtor.person, to: creditor.person, amount: Math.round(amount) })
-    
-    debtor.amount += amount
-    creditor.amount -= amount
-    
-    if (Math.abs(debtor.amount) < 1) i++
-    if (creditor.amount < 1) j++
-  }
-  
-  return { balances, transfers }
-})
+const settlement = computed(() => calculateSettlement(expenses.value, travelers.value))
 
 // --- Actions ---
 const openAddExpense = () => {
